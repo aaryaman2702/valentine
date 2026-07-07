@@ -108,7 +108,7 @@
       busy = true;
       els.send.disabled = true;
 
-      if (councilOn) {
+      if (councilOn || els.model.value === 'ministry') {
         try {
           const verdict = await sendCouncil(text);
           if (verdict) { messages.push({ role: 'assistant', content: verdict }); speak(verdict); }

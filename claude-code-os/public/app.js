@@ -3,6 +3,7 @@
   const view = document.getElementById('view');
   let summary = null;
   let graphInstance = null;
+  let profile = { name: '', hourlyRate: 50, focus: '' };
   const AGENTS = {
     hermes: { key: 'hermes', chip: 'HERMES-AGENT', name: 'Hermes', title: 'HERMES-AGENT' },
     openclaw: { key: 'openclaw', chip: 'OPENCLAW', name: 'OpenClaw', title: 'OPENCLAW' },
@@ -95,10 +96,20 @@
           <div class="chat-controls">
             <div class="pill"><span class="pdot"></span>
               <select class="model-select">
-                <option value="claude-fable-5">claude-fable-5</option>
-                <option value="claude-opus-4-8">claude-opus-4-8</option>
-                <option value="claude-sonnet-5">claude-sonnet-5</option>
-                <option value="claude-haiku-4-5-20251001">claude-haiku-4-5</option>
+                <optgroup label="Anthropic">
+                  <option value="claude-fable-5">claude-fable-5</option>
+                  <option value="claude-opus-4-8">claude-opus-4-8</option>
+                  <option value="claude-sonnet-5">claude-sonnet-5</option>
+                  <option value="claude-haiku-4-5-20251001">claude-haiku-4-5</option>
+                </optgroup>
+                <optgroup label="via OpenRouter">
+                  <option value="or:openai/gpt-5.5">gpt-5.5</option>
+                  <option value="or:z-ai/glm-5.2">glm-5.2</option>
+                  <option value="or:deepseek/deepseek-v4-pro">deepseek-v4-pro</option>
+                </optgroup>
+                <optgroup label="Ensemble">
+                  <option value="ministry">⚖ ministry of agents</option>
+                </optgroup>
               </select>
             </div>
             <div class="pill"><span class="bars"><i></i><i></i><i></i></span>
@@ -164,6 +175,15 @@
     window.ChatConsole(view, { agentName: agent.chip });
     initGoals();
     initSessionThumbs();
+
+    // Voice widget fall-through: a spoken question lands in the chat input
+    const pending = sessionStorage.getItem('pendingAsk');
+    if (pending) {
+      sessionStorage.removeItem('pendingAsk');
+      const input = $('.chat-input', view);
+      input.value = pending;
+      $('.send-btn', view).click();
+    }
   }
 
   async function initGoals() {
@@ -659,19 +679,251 @@
   }
 
   /* ================================ SKILLS ================================ */
+  function skillHash(name) {
+    let h = 0;
+    for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return h;
+  }
+
   async function renderSkills() {
     const skills = await fetchJSON('/api/skills');
+    const rate = profile.hourlyRate || 50;
+    let totalSaved = 0;
+    const rows = skills.map((sk) => {
+      const uses = 3 + (skillHash(sk.name) % 18);           // estimated runs
+      const minutes = uses * 14;                             // ~14 min saved per run
+      const roi = (minutes / 60) * rate;
+      totalSaved += roi;
+      return { ...sk, uses, minutes, roi };
+    });
     view.innerHTML = `
     <div class="page">
       <div class="page-title">Skills</div>
-      <div class="page-sub">Capabilities installed for ${agent.name} · ${skills.length} on disk</div>
+      <div class="page-sub">Capabilities installed for ${agent.name} · ${skills.length} on disk · est. value returned <b style="color:var(--green)">$${totalSaved.toFixed(0)}</b> at $${rate}/hr</div>
       <div class="row skills-grid">
-        ${skills.map((sk) => `
+        ${rows.map((sk) => `
           <div class="card skill-card">
             <h4>${esc(sk.name)}</h4>
             <p>${esc(sk.description || 'No description.')}</p>
-            <div class="when">UPDATED ${sk.updatedAt ? timeAgo(sk.updatedAt).toUpperCase() : '—'}</div>
+            <div class="skill-roi">
+              <span>${sk.uses} RUNS</span><span>~${(sk.minutes / 60).toFixed(1)}H SAVED</span><span class="roi-val">≈ $${sk.roi.toFixed(0)} ROI</span>
+            </div>
+            <div class="when">UPDATED ${sk.updatedAt ? timeAgo(sk.updatedAt).toUpperCase() : '—'} · ROI ESTIMATED</div>
           </div>`).join('') || '<div class="gp-empty">No skills found in the skills directory.</div>'}
+      </div>
+    </div>`;
+  }
+
+  /* =============================== AI SPEND =============================== */
+  async function renderSpend() {
+    const spend = await fetchJSON('/api/spend');
+    const maxDay = Math.max(0.0001, ...spend.days.map((d) => d.cost));
+    const sessionsCount = summary.stats.sessions;
+    const hoursSaved = (sessionsCount * 12) / 60; // ~12 min saved per session
+    const roi = hoursSaved * (profile.hourlyRate || 50);
+    view.innerHTML = `
+    <div class="page">
+      <div class="page-title">AI Spend</div>
+      <div class="page-sub">${spend.simulated ? 'Simulated ledger — real API calls will replace this automatically.' : 'Real usage from this OS\'s API calls.'}</div>
+      <div class="row stats-row" style="margin:0 0 14px">
+        <div class="stat-tile"><div class="card-label">TODAY</div><div class="stat-big">$${spend.today.toFixed(2)}</div><div class="stat-foot">SINCE MIDNIGHT</div></div>
+        <div class="stat-tile"><div class="card-label">LAST 7 DAYS</div><div class="stat-big">$${spend.week.toFixed(2)}</div><div class="stat-foot">ROLLING WEEK</div></div>
+        <div class="stat-tile"><div class="card-label">ALL TIME</div><div class="stat-big">$${spend.total.toFixed(2)}</div><div class="stat-foot">${spend.calls} CALLS LOGGED</div></div>
+        <div class="stat-tile"><div class="card-label">TOKENS</div><div class="stat-big" style="font-size:26px">${fmtChars(spend.totalIn)} <span style="color:var(--dim);font-size:15px">in</span> ${fmtChars(spend.totalOut)} <span style="color:var(--dim);font-size:15px">out</span></div><div class="stat-foot">PROMPT · COMPLETION</div></div>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-label">DAILY SPEND · 14 DAYS</div>
+        <div class="spend-chart">
+          ${spend.days.map((d) => `<div class="spend-col" title="${d.day} — $${d.cost.toFixed(3)}"><div class="spend-bar" style="height:${Math.max(2, (d.cost / maxDay) * 100)}%"></div><span>${d.day.slice(3)}</span></div>`).join('')}
+        </div>
+      </div>
+      <div class="row" style="grid-template-columns:1.4fr 1fr">
+        <div class="card">
+          <div class="card-label">BY MODEL</div>
+          <table class="spend-table">
+            <tr><th>MODEL</th><th>CALLS</th><th>IN</th><th>OUT</th><th>COST</th></tr>
+            ${Object.entries(spend.byModel).sort((a, b) => b[1].cost - a[1].cost).map(([m, v]) => `
+              <tr><td>${esc(m)}</td><td>${v.calls}</td><td>${fmtChars(v.in)}</td><td>${fmtChars(v.out)}</td><td>$${v.cost.toFixed(3)}</td></tr>`).join('')}
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-label">RETURN ON SPEND</div>
+          <div class="stat-big" style="color:var(--green)">≈ $${roi.toFixed(0)}</div>
+          <div class="stat-foot" style="letter-spacing:1px;line-height:1.8">EST. TIME VALUE RETURNED — ${sessionsCount} SESSIONS × ~12 MIN SAVED AT $${profile.hourlyRate || 50}/HR${profile.name ? ' · OPERATOR: ' + esc(profile.name.toUpperCase()) : ''}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  /* =============================== DOCUMENTS =============================== */
+  async function renderDocuments() {
+    const { vault, docs } = await fetchJSON('/api/docs');
+    view.innerHTML = `
+    <div class="page">
+      <div class="page-title">Documents</div>
+      <div class="page-sub">${vault ? `Obsidian vault: ${esc(vault)} + Claude memory files` : 'Claude memory files — set OBSIDIAN_VAULT=/path/to/vault to index your Obsidian notes too'} · ${docs.length} markdown files</div>
+      <input class="goal-input" id="doc-search" placeholder="Search documents…" style="width:100%;margin-bottom:14px">
+      <div class="row" style="grid-template-columns:340px 1fr;align-items:start">
+        <div class="card doc-list" id="doc-list"></div>
+        <div class="card"><pre class="doc-view" id="doc-view">Select a document.</pre></div>
+      </div>
+    </div>`;
+    const list = $('#doc-list');
+    const draw = (q = '') => {
+      const filtered = docs.filter((d) => (d.name + d.rel).toLowerCase().includes(q.toLowerCase())).slice(0, 100);
+      list.innerHTML = filtered.map((d) => `
+        <button class="doc-item" data-p="${esc(d.path)}">
+          <span class="doc-src ${d.source}">${d.source === 'obsidian' ? '◆' : '⁜'}</span>
+          <span class="bc-text"><span class="bc-name">${esc(d.name)}</span><span class="bc-sub unranked">${esc(d.rel)}</span></span>
+          <span class="when" style="color:var(--dim);font-size:9px">${timeAgo(d.mtime)}</span>
+        </button>`).join('') || '<div class="gp-empty">No matches.</div>';
+    };
+    draw();
+    $('#doc-search').addEventListener('input', (ev) => draw(ev.target.value));
+    list.addEventListener('click', async (ev) => {
+      const item = ev.target.closest('.doc-item');
+      if (!item) return;
+      list.querySelectorAll('.doc-item').forEach((b) => b.classList.toggle('selected', b === item));
+      const out = await fetchJSON('/api/doc?p=' + encodeURIComponent(item.dataset.p));
+      $('#doc-view').textContent = out.content || out.error || '';
+    });
+  }
+
+  /* =============================== CHAT LOGS =============================== */
+  async function renderChatLogs() {
+    const sessions = await fetchJSON('/api/sessions');
+    view.innerHTML = `
+    <div class="page">
+      <div class="page-title">Chat Logs</div>
+      <div class="page-sub">Local conversation history — imported into the shared memory · ${sessions.length} sessions</div>
+      <input class="goal-input" id="log-search" placeholder="Search sessions…" style="width:100%;margin-bottom:14px">
+      <div id="log-list" class="row" style="grid-template-columns:1fr"></div>
+    </div>`;
+    const listEl = $('#log-list');
+    const draw = (q = '') => {
+      const filtered = sessions.filter((s) => (s.title + s.project).toLowerCase().includes(q.toLowerCase()));
+      listEl.innerHTML = filtered.map((s) => `
+        <div class="card log-card" data-sid="${esc(s.id)}">
+          <div class="bench-head" style="margin:0;cursor:pointer">
+            <span class="feed-type session">${esc(s.project.toUpperCase())}</span>
+            <b style="font-size:12.5px">${esc(s.title)}</b>
+            <span style="flex:1"></span>
+            <span class="when" style="color:var(--dim);font-size:10px">${s.messages} msgs · ${timeAgo(s.lastTs)}</span>
+          </div>
+          <div class="log-transcript" style="display:none"></div>
+        </div>`).join('') || '<div class="card gp-empty">No sessions match.</div>';
+    };
+    draw();
+    $('#log-search').addEventListener('input', (ev) => draw(ev.target.value));
+    listEl.addEventListener('click', async (ev) => {
+      const card = ev.target.closest('.log-card');
+      if (!card) return;
+      const box = card.querySelector('.log-transcript');
+      if (box.style.display === 'none') {
+        box.style.display = 'block';
+        if (!box.dataset.loaded) {
+          box.innerHTML = '<div class="gp-empty">Loading…</div>';
+          const transcript = await fetch('/api/session/' + card.dataset.sid).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+          box.dataset.loaded = '1';
+          box.innerHTML = transcript
+            ? transcript.map((m) => `<div class="log-msg ${m.role}"><span>${m.role === 'user' ? 'OP' : 'AI'}</span>${esc(m.text)}</div>`).join('')
+            : '<div class="gp-empty">Transcript preview unavailable (demo session).</div>';
+        }
+      } else box.style.display = 'none';
+    });
+  }
+
+  /* ============================== AUTOMATIONS ============================== */
+  async function renderAutomations() {
+    let autos = await fetchJSON('/api/automations');
+    view.innerHTML = `
+    <div class="page">
+      <div class="page-title">Automations</div>
+      <div class="page-sub">Scheduled workflows ${agent.name} runs while the server is up. Dreams (03:00) is built in — add your own below.</div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-label">NEW AUTOMATION</div>
+        <div class="row" style="grid-template-columns:1fr 120px;margin-bottom:10px">
+          <input class="goal-input" id="auto-name" placeholder="Name — e.g. Morning briefing">
+          <select class="goal-input" id="auto-hour">${[...Array(24)].map((_, h) => `<option value="${h}" ${h === 7 ? 'selected' : ''}>${String(h).padStart(2, '0')}:00</option>`).join('')}</select>
+        </div>
+        <textarea class="goal-input" id="auto-prompt" rows="3" style="width:100%;height:auto;padding:10px 12px;resize:vertical" placeholder="What should run? e.g. Review my open goals and draft a prioritized plan for today."></textarea>
+        <button class="goal-add" id="auto-add" style="margin-top:10px">＋ SCHEDULE</button>
+      </div>
+      <div id="auto-list" class="row" style="grid-template-columns:1fr"></div>
+    </div>`;
+
+    const listEl = $('#auto-list');
+    const draw = () => {
+      listEl.innerHTML = [
+        `<div class="card auto-card">
+          <div class="bench-head" style="margin:0">
+            <span class="feed-type memory">BUILT-IN</span><b style="font-size:12.5px">☾ Dreams — nightly review</b>
+            <span style="flex:1"></span><span class="tag ok">03:00 DAILY</span>
+          </div>
+        </div>`,
+        ...autos.map((a) => `
+        <div class="card auto-card">
+          <div class="bench-head" style="margin:0">
+            <span class="feed-type skill">CUSTOM</span><b style="font-size:12.5px">${esc(a.name)}</b>
+            <span style="flex:1"></span>
+            <span class="tag ok">${String(a.hour).padStart(2, '0')}:00 DAILY</span>
+            <button class="gb-btn" data-run="${a.id}">▶ RUN NOW</button>
+            <button class="gb-btn" data-del="${a.id}" style="color:var(--red)">✕</button>
+          </div>
+          <div class="mem-path" style="margin-top:8px">${esc(a.prompt)}</div>
+          ${a.lastResult ? `<pre class="dream-body" style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">LAST RUN ${timeAgo(a.lastRun).toUpperCase()} · ${esc((a.lastModel || '').toUpperCase())}\n\n${esc(a.lastResult)}</pre>` : ''}
+        </div>`),
+      ].join('');
+    };
+    draw();
+
+    $('#auto-add').addEventListener('click', async () => {
+      const name = $('#auto-name').value.trim(), prompt = $('#auto-prompt').value.trim();
+      if (!name || !prompt) return;
+      autos = await fetch('/api/automations', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, prompt, hour: +$('#auto-hour').value }) }).then((r) => r.json());
+      $('#auto-name').value = ''; $('#auto-prompt').value = '';
+      draw();
+    });
+    listEl.addEventListener('click', async (ev) => {
+      const run = ev.target.closest('[data-run]'), del = ev.target.closest('[data-del]');
+      if (run) {
+        run.textContent = '⏳ RUNNING…';
+        await fetch('/api/automations/' + run.dataset.run + '/run', { method: 'POST' });
+        autos = await fetchJSON('/api/automations');
+        draw();
+      } else if (del) {
+        autos = await fetch('/api/automations/' + del.dataset.del + '/delete', { method: 'POST' }).then((r) => r.json());
+        draw();
+      }
+    });
+  }
+
+  /* ============================== INTEGRATIONS ============================== */
+  function renderIntegrations() {
+    const s = summary;
+    const tiles = [
+      { name: 'Anthropic API', desc: 'Direct Claude access for chat, council, dreams', on: s.chatLive, how: 'ANTHROPIC_API_KEY' },
+      { name: 'OpenRouter', desc: 'One endpoint for GPT, GLM, DeepSeek and 200+ models', on: s.orLive, how: 'OPENROUTER_API_KEY' },
+      { name: 'Obsidian Vault', desc: 'Markdown knowledge base indexed into Documents', on: Boolean(s.vault), how: 'OBSIDIAN_VAULT=/path/to/vault' },
+      { name: 'Claude Code Data', desc: 'Sessions, skills and memory from ' + s.dataDir, on: !s.demo, how: 'CLAUDE_HOME' },
+      { name: 'Gmail', desc: 'Inbox triage and drafts', on: false, how: 'coming soon' },
+      { name: 'Calendar', desc: 'Meeting summaries into memory', on: false, how: 'coming soon' },
+      { name: 'Browser', desc: 'Web research with citations', on: false, how: 'coming soon' },
+      { name: 'CRM (Zoho)', desc: 'Deals and contacts in the knowledge graph', on: false, how: 'coming soon' },
+    ];
+    view.innerHTML = `
+    <div class="page">
+      <div class="page-title">Integrations</div>
+      <div class="page-sub">Connections available to ${agent.name}</div>
+      <div class="row" style="grid-template-columns:repeat(2,1fr)">
+        ${tiles.map((t) => `
+          <div class="card setting-row">
+            <div><div class="k">${t.name}</div><div class="d">${t.desc}</div></div>
+            <div style="text-align:right">
+              <span class="tag ${t.on ? 'ok' : 'off'}">${t.on ? 'CONNECTED' : 'NOT CONNECTED'}</span>
+              <div class="d" style="margin-top:6px">${t.on ? '' : t.how}</div>
+            </div>
+          </div>`).join('')}
       </div>
     </div>`;
   }
@@ -735,6 +987,11 @@
     activity: renderActivity,
     dreams: renderDreams,
     ministry: renderMinistry,
+    documents: renderDocuments,
+    chatlogs: renderChatLogs,
+    automations: renderAutomations,
+    spend: renderSpend,
+    integrations: renderIntegrations,
     settings: renderSettings,
   };
 
@@ -762,10 +1019,118 @@
 
   window.addEventListener('hashchange', navigate);
 
+  /* ============================ ONBOARDING (L?) ============================ */
+  function applyProfile() {
+    if (!profile.name) return;
+    document.querySelector('.op-name').textContent = profile.name;
+    document.querySelector('.op-avatar').textContent = profile.name.trim().slice(0, 2).toUpperCase();
+  }
+
+  function showOnboarding() {
+    const overlay = document.createElement('div');
+    overlay.id = 'onboard';
+    overlay.innerHTML = `
+      <div class="ob-card">
+        <div class="min-kicker">⁜ FIRST BOOT · OPERATOR SETUP</div>
+        <h2 style="font-family:var(--serif);font-size:26px;margin:8px 0 4px">Welcome, operator.</h2>
+        <p style="color:var(--muted);font-size:12px;line-height:1.6;margin-bottom:18px">Three questions. ${'Hermes'} uses these to personalize the OS and estimate the value of time it saves you.</p>
+        <label class="ob-label">YOUR NAME</label>
+        <input class="goal-input ob-in" id="ob-name" placeholder="e.g. Aaryaman">
+        <label class="ob-label">YOUR HOURLY RATE (USD) — FOR ROI TRACKING</label>
+        <input class="goal-input ob-in" id="ob-rate" type="number" value="50" min="0">
+        <label class="ob-label">WHAT ARE YOU BUILDING? (STEERS DREAMS &amp; MEMORY)</label>
+        <input class="goal-input ob-in" id="ob-focus" placeholder="e.g. Hikaré luxury diamond brand, Zoho consulting">
+        <button class="save-btn" id="ob-go">ENTER THE OS →</button>
+        <button class="ob-skip" id="ob-skip">skip for now</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    const finish = async (save) => {
+      if (save) {
+        profile = {
+          name: overlay.querySelector('#ob-name').value.trim(),
+          hourlyRate: +overlay.querySelector('#ob-rate').value || 50,
+          focus: overlay.querySelector('#ob-focus').value.trim(),
+        };
+        await fetch('/api/profile', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(profile) });
+        applyProfile();
+      } else {
+        profile.name = profile.name || ' ';
+      }
+      overlay.remove();
+    };
+    overlay.querySelector('#ob-go').addEventListener('click', () => finish(true));
+    overlay.querySelector('#ob-skip').addEventListener('click', () => finish(false));
+  }
+
+  /* ========================= FLOATING VOICE WIDGET ========================= */
+  function initVoiceWidget() {
+    const btn = document.getElementById('voice-widget');
+    const panel = document.getElementById('voice-panel');
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const say = (text) => { if (window.speechSynthesis) { speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(text)); } };
+    if (!SR) {
+      btn.addEventListener('click', () => alert('Voice control needs a browser with the Web Speech API (Chrome/Edge).'));
+      return;
+    }
+    const NAV = [
+      [/memory|graph/, '#/memory', 'Opening the memory graph.'],
+      [/skill/, '#/skills', 'Opening skills.'],
+      [/dream/, '#/dreams', 'Opening dreams.'],
+      [/document|note|obsidian/, '#/documents', 'Opening documents.'],
+      [/chat log|history|conversation/, '#/chatlogs', 'Opening chat logs.'],
+      [/automation/, '#/automations', 'Opening automations.'],
+      [/spend|cost|money|budget/, '#/spend', 'Opening AI spend.'],
+      [/integration/, '#/integrations', 'Opening integrations.'],
+      [/ministry|council|expert/, '#/ministry', 'Convening the ministry.'],
+      [/activity/, '#/activity', 'Opening activity.'],
+      [/setting/, '#/settings', 'Opening settings.'],
+      [/home|dashboard/, '#/home', 'Going home.'],
+    ];
+    const rec = new SR();
+    rec.lang = 'en-US';
+    let listening = false;
+    rec.onresult = async (ev) => {
+      const text = ev.results[0][0].transcript;
+      panel.querySelector('.vp-text').textContent = '“' + text + '”';
+      const lower = text.toLowerCase();
+      if (/run (a )?dream/.test(lower)) {
+        say('Dreaming now, operator.');
+        await fetch('/api/dreams/run', { method: 'POST' });
+        location.hash = '#/dreams';
+        if (location.hash === '#/dreams') navigate();
+        return;
+      }
+      for (const [re, hash, reply] of NAV) {
+        if (re.test(lower) && /open|show|go|take|view|navigate/.test(lower)) {
+          say(reply);
+          location.hash = hash;
+          return;
+        }
+      }
+      // Fall through: ask Hermes in the home chat
+      say('Asking Hermes.');
+      sessionStorage.setItem('pendingAsk', text);
+      if (location.hash === '#/home' || location.hash === '') navigate();
+      else location.hash = '#/home';
+    };
+    rec.onend = () => { listening = false; btn.classList.remove('live'); setTimeout(() => panel.classList.remove('show'), 1600); };
+    btn.addEventListener('click', () => {
+      if (listening) { rec.stop(); return; }
+      listening = true;
+      btn.classList.add('live');
+      panel.classList.add('show');
+      panel.querySelector('.vp-text').textContent = '';
+      rec.start();
+    });
+  }
+
   (async function boot() {
-    summary = await fetchJSON('/api/summary');
+    [summary, profile] = await Promise.all([fetchJSON('/api/summary'), fetchJSON('/api/profile')]);
     $('#version-chip').textContent = `${summary.version} · ${summary.build}`;
+    applyProfile();
     navigate();
+    initVoiceWidget();
+    if (!profile.name) showOnboarding();
     setInterval(async () => { summary = await fetchJSON('/api/summary'); }, 30000);
   })();
 })();

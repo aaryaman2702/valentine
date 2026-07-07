@@ -27,6 +27,11 @@
       <a href="#/graph" data-route="graph"><span class="nav-ico">⌁</span>Knowledge Graph</a>
       <a href="#/activity" data-route="activity"><span class="nav-ico">∿</span>Activity</a>
       <a href="#/dreams" data-route="dreams"><span class="nav-ico">☾</span>Dreams</a>
+      <a href="#/documents" data-route="documents"><span class="nav-ico">🗎</span>Documents</a>
+      <a href="#/chatlogs" data-route="chatlogs"><span class="nav-ico">🗨</span>Chat Logs</a>
+      <a href="#/automations" data-route="automations"><span class="nav-ico">⟳</span>Automations</a>
+      <a href="#/spend" data-route="spend"><span class="nav-ico">$</span>AI Spend</a>
+      <a href="#/integrations" data-route="integrations"><span class="nav-ico">⌘</span>Integrations</a>
     </nav>
 
     <div class="side-section">AGENTS</div>
@@ -180,6 +185,10 @@
     </g>
   </svg>
 </template>
+
+<!-- Floating voice widget (Level 5) -->
+<button id="voice-widget" title="Voice control — try: 'open memory', 'run a dream', or ask anything">🎙</button>
+<div id="voice-panel"><span class="vp-status">LISTENING…</span><span class="vp-text"></span></div>
 
 <script src="/graph.js"></script>
 <script src="/chat.js"></script>

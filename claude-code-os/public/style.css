@@ -486,6 +486,71 @@ button { font-family: var(--mono); cursor: pointer; }
 .pill.toggle { cursor: pointer; }
 .pill.toggle.active { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 10px rgba(240, 178, 62, .18); }
 
+/* ------------------------- spend / docs / logs etc ------------------------- */
+.spend-chart { display: flex; gap: 6px; align-items: flex-end; height: 110px; margin-top: 8px; }
+.spend-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: flex-end; }
+.spend-bar { width: 100%; border-radius: 3px 3px 0 0; background: linear-gradient(180deg, var(--gold), #8a5f13); min-height: 2px; }
+.spend-col span { color: var(--dim); font-size: 8px; }
+.spend-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.spend-table th { text-align: left; color: var(--dim); font-size: 8.5px; letter-spacing: 2px; padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); }
+.spend-table td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
+.spend-table tr:last-child td { border-bottom: none; }
+.spend-table td:first-child { color: var(--text); }
+
+.doc-list { max-height: 560px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding: 10px; }
+.doc-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 7px;
+  background: none; border: 1px solid transparent; color: var(--text); text-align: left; min-width: 0;
+}
+.doc-item:hover { background: var(--panel-2); }
+.doc-item.selected { border-color: var(--line-2); background: var(--panel-2); }
+.doc-src { font-size: 12px; }
+.doc-src.obsidian { color: var(--purple); }
+.doc-src.claude { color: var(--gold); }
+.doc-view { white-space: pre-wrap; word-break: break-word; font-size: 11.5px; line-height: 1.7; color: var(--muted); max-height: 540px; overflow-y: auto; }
+
+.log-card { cursor: default; }
+.log-transcript { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
+.log-msg { font-size: 11.5px; color: var(--muted); line-height: 1.6; display: flex; gap: 10px; }
+.log-msg span { color: var(--dim); font-size: 9px; letter-spacing: 1px; min-width: 20px; padding-top: 2px; }
+.log-msg.user span { color: var(--green); }
+.log-msg.assistant span { color: var(--gold); }
+
+.skill-roi { display: flex; gap: 12px; margin-top: 12px; font-size: 9px; letter-spacing: 1px; color: var(--muted); }
+.skill-roi .roi-val { color: var(--green); margin-left: auto; }
+
+/* ------------------------------- onboarding ------------------------------- */
+#onboard {
+  position: fixed; inset: 0; z-index: 50; display: grid; place-items: center;
+  background: rgba(5, 8, 6, .82); backdrop-filter: blur(6px);
+}
+.ob-card {
+  width: min(460px, 92vw); background: var(--panel); border: 1px solid var(--line-2);
+  border-radius: 14px; padding: 30px 32px; box-shadow: 0 30px 80px rgba(0, 0, 0, .6);
+}
+.ob-label { display: block; color: var(--dim); font-size: 8.5px; letter-spacing: 2.5px; margin: 14px 0 6px; }
+.ob-in { width: 100%; }
+.ob-skip { display: block; margin: 12px auto 0; background: none; border: none; color: var(--dim); font-size: 10.5px; letter-spacing: 1px; }
+.ob-skip:hover { color: var(--muted); }
+
+/* ----------------------------- voice widget ----------------------------- */
+#voice-widget {
+  position: fixed; right: 26px; bottom: 26px; z-index: 40;
+  width: 54px; height: 54px; border-radius: 50%; font-size: 20px;
+  background: radial-gradient(circle at 32% 28%, #ff9d5c, #e8703a 58%, #b34a1f);
+  border: 1px solid #6b2f12; color: #fff;
+  box-shadow: 0 8px 28px rgba(232, 112, 58, .35);
+}
+#voice-widget:hover { transform: scale(1.06); }
+#voice-widget.live { animation: pulse 1s infinite; box-shadow: 0 0 0 8px rgba(232, 112, 58, .18), 0 8px 28px rgba(232, 112, 58, .5); }
+#voice-panel {
+  position: fixed; right: 92px; bottom: 36px; z-index: 40; display: none; align-items: center; gap: 10px;
+  background: rgba(10, 15, 12, .95); border: 1px solid var(--line-2); border-radius: 9px; padding: 10px 14px;
+  font-size: 11.5px; max-width: 330px;
+}
+#voice-panel.show { display: flex; }
+#voice-panel .vp-status { color: var(--red); font-size: 8.5px; letter-spacing: 2px; animation: pulse 1s infinite; }
+
 /* -------------------------------- dreams -------------------------------- */
 .dream-card { margin-bottom: 4px; }
 .dream-body { white-space: pre-wrap; word-break: break-word; font-size: 12px; line-height: 1.7; color: var(--text); font-family: var(--mono); }
