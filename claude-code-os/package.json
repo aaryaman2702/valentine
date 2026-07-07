@@ -1,0 +1,16 @@
+{
+  "name": "claude-code-os",
+  "version": "2.10.1",
+  "description": "Claude Code OS — local operator dashboard for your agents (Hermes-Agent)",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

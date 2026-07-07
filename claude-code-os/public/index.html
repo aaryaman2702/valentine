@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Code OS — Operator</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e8703a'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='%23fff'%3E%E2%81%9C%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="os">
+
+  <!-- ============================= SIDEBAR ============================= -->
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">⁜</div>
+      <div class="brand-text">
+        <div class="brand-name">Claude Code OS</div>
+        <div class="brand-sub">OPERATOR</div>
+      </div>
+    </div>
+
+    <nav id="nav">
+      <a href="#/home" data-route="home"><span class="nav-ico">⌂</span>Home</a>
+      <a href="#/skills" data-route="skills"><span class="nav-ico">✦</span>Skills</a>
+      <a href="#/memory" data-route="memory"><span class="nav-ico">◍</span>Memory</a>
+      <a href="#/graph" data-route="graph"><span class="nav-ico">⌁</span>Knowledge Graph</a>
+      <a href="#/activity" data-route="activity"><span class="nav-ico">∿</span>Activity</a>
+      <a href="#/dreams" data-route="dreams"><span class="nav-ico">☾</span>Dreams</a>
+    </nav>
+
+    <div class="side-section">AGENTS</div>
+    <div class="agents">
+      <button class="agent-btn agent-hermes active" id="agent-hermes">HERMES-AGENT</button>
+      <button class="agent-btn agent-openclaw" id="agent-openclaw"><span class="claw">🦞</span>OPEN<em>CLAW</em></button>
+    </div>
+
+    <div class="side-spacer"></div>
+
+    <nav class="nav-bottom">
+      <a href="#/settings" data-route="settings"><span class="nav-ico">⚙</span>Settings</a>
+    </nav>
+    <div class="operator-chip">
+      <div class="op-avatar">OP</div>
+      <div>
+        <div class="op-name">Operator</div>
+        <div class="op-sub">LOCAL</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================== MAIN =============================== -->
+  <div id="main">
+    <header id="topbar">
+      <div class="crumb">
+        <strong>Operator</strong><span class="crumb-sep">/</span><span>local</span>
+        <span class="version-chip" id="version-chip">V2.10.1 · 3dbd8e1</span>
+      </div>
+      <div class="topbar-right">
+        <span class="agent-chip" id="topbar-agent">HERMES-AGENT</span>
+        <span class="agent-status"><span class="dot dot-green"></span><strong id="topbar-agent-name">Hermes</strong>&nbsp;<span class="spaced" id="topbar-agent-status">ONLINE</span></span>
+        <button class="icon-btn" title="Notifications">🔔</button>
+      </div>
+    </header>
+    <main id="view"></main>
+  </div>
+</div>
+
+<!-- ======================= INLINE ART (SVG defs) ======================= -->
+<template id="art-arch">
+  <svg viewBox="0 0 900 560" preserveAspectRatio="xMidYMax slice" class="arch-svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="archGlow" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#1c2b22"/><stop offset=".55" stop-color="#12201a"/><stop offset="1" stop-color="#0a120e"/>
+      </linearGradient>
+      <radialGradient id="haze" cx=".5" cy=".42" r=".55">
+        <stop offset="0" stop-color="#3a5c42" stop-opacity=".55"/><stop offset="1" stop-color="#0a120e" stop-opacity="0"/>
+      </radialGradient>
+      <pattern id="meander" width="28" height="28" patternUnits="userSpaceOnUse">
+        <path d="M2 26V2h24v16h-16v-8h8" fill="none" stroke="#3d5a45" stroke-width="2.4"/>
+      </pattern>
+      <pattern id="coffer" width="46" height="46" patternUnits="userSpaceOnUse">
+        <rect x="4" y="4" width="38" height="38" fill="none" stroke="#24382c" stroke-width="3"/>
+        <rect x="13" y="13" width="20" height="20" fill="none" stroke="#1b2c22" stroke-width="3"/>
+      </pattern>
+    </defs>
+    <rect width="900" height="560" fill="url(#archGlow)"/>
+    <!-- meander side bands -->
+    <rect x="26" y="0" width="30" height="560" fill="url(#meander)" opacity=".5"/>
+    <rect x="844" y="0" width="30" height="560" fill="url(#meander)" opacity=".5"/>
+    <!-- outer arch -->
+    <path d="M120 560 V300 A330 330 0 0 1 780 300 V560" fill="none" stroke="#2c4434" stroke-width="26"/>
+    <path d="M120 560 V300 A330 330 0 0 1 780 300 V560" fill="none" stroke="#405c48" stroke-width="3"/>
+    <!-- coffered inner arch -->
+    <path d="M180 560 V310 A270 270 0 0 1 720 310 V560" fill="url(#coffer)" opacity=".8"/>
+    <path d="M180 560 V310 A270 270 0 0 1 720 310 V560" fill="none" stroke="#324c3a" stroke-width="8"/>
+    <!-- interior depth -->
+    <path d="M250 560 V340 A200 200 0 0 1 650 340 V560" fill="#0d1712"/>
+    <path d="M250 560 V340 A200 200 0 0 1 650 340 V560" fill="url(#haze)"/>
+    <path d="M320 560 V380 A130 130 0 0 1 580 380 V560" fill="#091009"/>
+    <!-- floor -->
+    <g stroke="#233829" stroke-width="2" opacity=".7">
+      <line x1="130" y1="560" x2="330" y2="470"/><line x1="770" y1="560" x2="570" y2="470"/>
+      <line x1="250" y1="560" x2="380" y2="480"/><line x1="650" y1="560" x2="520" y2="480"/>
+      <line x1="300" y1="520" x2="600" y2="520"/><line x1="330" y1="488" x2="570" y2="488"/>
+    </g>
+    <!-- keystone medallions -->
+    <circle cx="450" cy="120" r="26" fill="none" stroke="#3d5a45" stroke-width="3"/>
+    <circle cx="450" cy="120" r="14" fill="none" stroke="#324c3a" stroke-width="2"/>
+    <circle cx="300" cy="160" r="16" fill="none" stroke="#324c3a" stroke-width="2.5" opacity=".7"/>
+    <circle cx="600" cy="160" r="16" fill="none" stroke="#324c3a" stroke-width="2.5" opacity=".7"/>
+    <!-- Hermes figure: runner silhouette with whip-line -->
+    <g class="hermes-fig" transform="translate(430 330)">
+      <radialGradient id="figGlow" cx=".5" cy=".3" r=".8">
+        <stop offset="0" stop-color="#7d9b82" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity="0"/>
+      </radialGradient>
+      <ellipse cx="10" cy="110" rx="120" ry="130" fill="url(#figGlow)"/>
+      <g fill="#131f17" stroke="#5d7f66" stroke-width="2" stroke-linejoin="round">
+        <circle cx="4" cy="-4" r="15"/>
+        <!-- torso + striding legs as one silhouette -->
+        <path d="M-6 12
+                 C-18 28 -22 58 -13 86
+                 L-30 148 L-54 202 L-40 209 L-8 152 L2 116
+                 L20 156 L13 210 L29 212 L38 150 L23 86
+                 C31 56 25 26 12 12 Z"/>
+        <!-- rear arm reaching back -->
+        <path d="M-8 28 L-50 62 L-44 72 L-4 46 Z"/>
+        <!-- forward arm holding the whip -->
+        <path d="M14 30 L64 48 L60 59 L10 48 Z"/>
+      </g>
+      <!-- whip line -->
+      <path d="M64 52 C140 44 180 100 236 88 C278 78 298 116 340 112" fill="none" stroke="#6e8f76" stroke-width="2.4" stroke-linecap="round" opacity=".85"/>
+      <!-- winged sandals + helmet wing -->
+      <path d="M-54 200 l-16 -7 9 14 z M15 208 l-15 -5 7 11 z M-9 -12 l-14 -8 5 12 z" fill="#5d7f66"/>
+    </g>
+  </svg>
+</template>
+
+<template id="art-athena">
+  <svg viewBox="0 0 340 300" class="athena-svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="athBg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#2f7fe8"/><stop offset="1" stop-color="#1b4fbd"/>
+      </linearGradient>
+    </defs>
+    <rect width="340" height="300" rx="6" fill="url(#athBg)"/>
+    <rect x="10" y="10" width="320" height="280" rx="4" fill="none" stroke="#eaf1ff" stroke-width="2" opacity=".85"/>
+    <!-- clouds -->
+    <g fill="none" stroke="#eaf1ff" stroke-width="2.4" opacity=".9" stroke-linecap="round">
+      <path d="M30 250 q24 -22 52 -8 q10 -22 38 -16 q6 -14 26 -12"/>
+      <path d="M200 262 q20 -18 46 -8 q12 -18 40 -10"/>
+      <path d="M40 272 q30 -14 62 -4 M210 280 q28 -12 58 -4"/>
+    </g>
+    <!-- spear -->
+    <g stroke="#eaf1ff" stroke-width="4" stroke-linecap="round">
+      <line x1="86" y1="40" x2="102" y2="270"/>
+      <path d="M86 40 l-8 24 8 -6 8 6 z" fill="#eaf1ff"/>
+    </g>
+    <!-- Athena profile with Corinthian helmet -->
+    <g fill="none" stroke="#f4f8ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <!-- crest -->
+      <path d="M150 34 q64 -26 96 18 q8 12 6 30 l-14 -8 q4 26 -8 40"/>
+      <path d="M158 44 q52 -18 78 16" stroke-width="2.4" opacity=".8"/>
+      <path d="M166 54 q42 -12 62 16" stroke-width="2.4" opacity=".6"/>
+      <!-- helmet + face -->
+      <path d="M150 36 q-28 10 -32 44 q-2 22 10 34 l6 -18 q2 26 16 34"/>
+      <path d="M136 96 q10 -4 18 2 q-2 14 6 22 l-10 30 q14 12 34 8 l10 -26 q16 -4 22 -18 q10 -18 4 -40"/>
+      <path d="M158 106 q6 -6 14 -4" stroke-width="3"/><!-- eye -->
+      <path d="M148 128 q6 8 16 6" stroke-width="3"/><!-- lips -->
+      <!-- neck / drape -->
+      <path d="M184 158 q-4 26 -28 34 q-20 8 -26 28 M196 158 q18 22 44 24"/>
+      <path d="M150 200 q20 14 52 8 q22 -4 34 -18" stroke-width="2.6" opacity=".8"/>
+    </g>
+    <!-- owl -->
+    <g fill="none" stroke="#f4f8ff" stroke-width="3" stroke-linecap="round">
+      <circle cx="256" cy="212" r="17"/>
+      <path d="M244 204 q6 -10 12 0 q6 -10 12 0"/>
+      <circle cx="250" cy="212" r="2.4" fill="#f4f8ff"/><circle cx="262" cy="212" r="2.4" fill="#f4f8ff"/>
+      <path d="M252 220 l4 4 4 -4 M246 229 q10 8 20 0"/>
+    </g>
+  </svg>
+</template>
+
+<script src="/graph.js"></script>
+<script src="/chat.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

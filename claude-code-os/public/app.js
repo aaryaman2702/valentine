@@ -1,0 +1,771 @@
+/* Claude Code OS — SPA router + page renderers. */
+(function () {
+  const view = document.getElementById('view');
+  let summary = null;
+  let graphInstance = null;
+  const AGENTS = {
+    hermes: { key: 'hermes', chip: 'HERMES-AGENT', name: 'Hermes', title: 'HERMES-AGENT' },
+    openclaw: { key: 'openclaw', chip: 'OPENCLAW', name: 'OpenClaw', title: 'OPENCLAW' },
+  };
+  let agent = AGENTS.hermes;
+
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  function timeAgo(ts) {
+    if (!ts) return '—';
+    const s = Math.floor((Date.now() - ts) / 1000);
+    if (s < 60) return s + 's ago';
+    if (s < 3600) return Math.floor(s / 60) + 'm ago';
+    if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+    return Math.floor(s / 86400) + 'd ago';
+  }
+  function fmtChars(n) {
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return String(n);
+  }
+  const art = (id) => document.getElementById(id).innerHTML;
+  const fetchJSON = (url) => fetch(url).then((r) => r.json());
+
+  /* Procedural "engraving" thumbnails for the session strip */
+  function stripThumbSVG(seed) {
+    let s = 0;
+    for (const ch of seed) s = (s * 31 + ch.charCodeAt(0)) >>> 0;
+    const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    let paths = '';
+    for (let i = 0; i < 7; i++) {
+      paths += `<path d="M${rnd() * 44} ${rnd() * 34} Q${rnd() * 44} ${rnd() * 34} ${rnd() * 44} ${rnd() * 34}" stroke="#4a6350" stroke-width="1" fill="none" opacity="${0.4 + rnd() * 0.5}"/>`;
+    }
+    return `<svg viewBox="0 0 44 34"><rect width="44" height="34" fill="#101a13"/>${paths}<rect x="3" y="3" width="38" height="28" fill="none" stroke="#2a3d30" stroke-width="1.4"/></svg>`;
+  }
+
+  /* ================================= HOME ================================= */
+  async function renderHome() {
+    const [sessions] = await Promise.all([fetchJSON('/api/sessions')]);
+    const s = summary;
+    const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    const maxWeek = Math.max(1, ...s.week);
+    const memPath = s.demo ? '~/.HERMES/MEMORIES' : s.dataDir.toUpperCase();
+
+    view.innerHTML = `
+    <div class="page">
+      ${s.demo ? `<div class="demo-note">◈ DEMO DATA — no sessions found on disk yet. Everything goes live once ~/.claude has history.</div>` : ''}
+      <div class="row top-row">
+        <div class="card">
+          <div class="card-label">MEMORY</div>
+          <div class="mem-gauge-nums"><strong>${fmtChars(s.memory.usedChars)}</strong> <span style="color:var(--dim)">/ ${fmtChars(s.memory.quotaChars)} CHARS</span></div>
+          <div class="mem-bar"><div style="width:${s.memory.percentFull}%"></div></div>
+          <div class="mem-path">${s.memory.percentFull}% FULL · ${esc(memPath)}</div>
+        </div>
+        <div class="card week-card">
+          <div class="week-head"><div class="card-label" style="margin:0">THIS WEEK</div><div class="stat-foot">ON DISK</div></div>
+          <div class="week-bars">
+            ${s.week.map((v, i) => `
+              <div class="week-day ${i === s.today ? 'today' : ''}">
+                <div class="bar" style="height:${Math.max(5, (v / maxWeek) * 100)}%"></div><span>${days[i]}</span>
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-bezel" id="chat-root">
+        <div class="chat-strip">
+          <button class="strip-collapse" title="Collapse">&raquo;</button>
+          <button class="strip-new js-new-chat" title="New chat">+</button>
+          ${sessions.slice(0, 12).map((sess) => `
+            <div class="strip-thumb" title="${esc(sess.title)}" data-sid="${esc(sess.id)}">${stripThumbSVG(sess.id)}<span class="go">›</span></div>
+          `).join('')}
+        </div>
+        <div class="chat-main">
+          <div class="chat-art">${art('art-arch')}</div>
+          <div class="chat-head">
+            <button class="nc js-new-chat" style="background:none;border:none;color:var(--text)">NEW CHAT</button>
+            <span style="display:flex;gap:8px">
+              <button class="voice-btn tts-btn" title="Speak replies aloud">🔊 SPEAK</button>
+              <button class="voice-btn">🎙 VOICE</button>
+            </span>
+          </div>
+          <div class="chat-center">
+            <div class="hero-title">${agent.title}</div>
+            <div class="hero-cta">START A NEW CONVERSATION</div>
+          </div>
+          <div class="chat-log"></div>
+          <div class="chat-controls">
+            <div class="pill"><span class="pdot"></span>
+              <select class="model-select">
+                <option value="claude-fable-5">claude-fable-5</option>
+                <option value="claude-opus-4-8">claude-opus-4-8</option>
+                <option value="claude-sonnet-5">claude-sonnet-5</option>
+                <option value="claude-haiku-4-5-20251001">claude-haiku-4-5</option>
+              </select>
+            </div>
+            <div class="pill"><span class="bars"><i></i><i></i><i></i></span>
+              <select class="effort-select">
+                <option value="low">low</option>
+                <option value="medium" selected>medium</option>
+                <option value="high">high</option>
+              </select>
+            </div>
+            <div class="pill">❯_ Command</div>
+            <button class="pill toggle" id="council-pill" title="Route through the Ministry of Experts council">⚖ Ministry</button>
+            <div class="ctx-meter">
+              <span class="ctx-cells">${'<i></i>'.repeat(14)}</span>
+              <span class="ctx-pct">0%</span>
+            </div>
+          </div>
+          <div class="chat-input-row">
+            <button class="attach-btn" title="Attach">🖇</button>
+            <input class="chat-input" placeholder="Ask ${agent.name} anything… (drop or paste an image)">
+            <button class="send-btn">✈ SEND</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row stats-row">
+        <div class="stat-tile">
+          <div class="card-label">SESSIONS</div>
+          <div class="stat-big">${s.stats.sessions}<span class="stat-dashes">----------</span></div>
+          <div class="stat-foot">LAST ${s.stats.sessionsOnDisk} ON DISK</div>
+        </div>
+        <div class="stat-tile">
+          <div class="card-label">MESSAGES</div>
+          <div class="stat-big">${s.stats.messages}<span class="ico">▭</span></div>
+          <div class="stat-foot">ACROSS ALL SESSIONS</div>
+        </div>
+        <div class="stat-tile">
+          <div class="card-label">MODELS</div>
+          <div class="stat-big">${s.stats.models}<span class="model-chips">${'<i>⁜</i>'.repeat(Math.min(3, Math.max(1, s.stats.models)))}</span></div>
+          <div class="stat-foot">DISTINCT MODELS USED</div>
+        </div>
+        <div class="stat-tile">
+          <div class="card-label">LAST ACTIVE</div>
+          <div class="stat-big" style="font-size:30px">${timeAgo(s.stats.lastActiveTs)}<span class="last-dot"></span></div>
+          <div class="stat-foot">${esc((s.stats.lastModel || '').toUpperCase())}</div>
+        </div>
+      </div>
+
+      <div class="mc-head"><span class="dot"></span><h2>Mission Control</h2></div>
+      <div class="card mc-card">
+        <div class="mc-art">${art('art-athena')}</div>
+        <div class="mc-body">
+          <h3>Every hero needs<br>a <em>great goal.</em></h3>
+          <p>Give ${agent.name} a mission. Goals persist locally and steer what the agent optimizes for across sessions.</p>
+          <div class="goal-row">
+            <input class="goal-input" placeholder="e.g. Ship the agentic OS video by Friday">
+            <button class="goal-add">＋ SET GOAL</button>
+          </div>
+          <div class="goal-list" id="goal-list"></div>
+        </div>
+      </div>
+    </div>`;
+
+    window.ChatConsole(view, { agentName: agent.chip });
+    initGoals();
+    initSessionThumbs();
+  }
+
+  async function initGoals() {
+    const list = $('#goal-list');
+    let goals = await fetchJSON('/api/goals').catch(() => []);
+    const save = () => fetch('/api/goals', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(goals) });
+    const draw = () => {
+      list.innerHTML = goals.map((g, i) => `
+        <div class="goal-item ${g.done ? 'done' : ''}">
+          <input type="checkbox" data-i="${i}" ${g.done ? 'checked' : ''}>
+          <span>${esc(g.text)}</span>
+          <button class="rm" data-i="${i}">✕</button>
+        </div>`).join('') || '<div class="gp-empty">No missions yet, operator.</div>';
+    };
+    draw();
+    list.addEventListener('change', (ev) => {
+      const i = ev.target.dataset.i;
+      if (i !== undefined) { goals[i].done = ev.target.checked; save(); draw(); }
+    });
+    list.addEventListener('click', (ev) => {
+      if (ev.target.classList.contains('rm')) { goals.splice(ev.target.dataset.i, 1); save(); draw(); }
+    });
+    $('.goal-add').addEventListener('click', () => {
+      const input = $('.goal-input');
+      const text = input.value.trim();
+      if (!text) return;
+      goals.push({ text, done: false, ts: Date.now() });
+      input.value = '';
+      save(); draw();
+    });
+  }
+
+  function initSessionThumbs() {
+    view.querySelectorAll('.strip-thumb').forEach((thumb) => {
+      thumb.addEventListener('click', async () => {
+        const transcript = await fetch('/api/session/' + thumb.dataset.sid).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        const bezel = $('#chat-root');
+        const log = $('.chat-log', bezel);
+        bezel.classList.add('chatting');
+        log.innerHTML = '';
+        if (!transcript) {
+          log.innerHTML = '<div class="msg msg-assistant"><div class="who">ARCHIVE</div>Transcript preview not available for this session.</div>';
+          return;
+        }
+        for (const m of transcript) {
+          const div = document.createElement('div');
+          div.className = 'msg msg-' + (m.role === 'user' ? 'user' : 'assistant');
+          div.textContent = m.text;
+          log.appendChild(div);
+        }
+        log.scrollTop = log.scrollHeight;
+      });
+    });
+  }
+
+  /* ========================== MEMORY / KNOWLEDGE ========================== */
+  const modeIcon = {
+    macro: '<svg viewBox="0 0 26 18"><circle cx="13" cy="9" r="3" fill="#3fd67f"/><circle cx="4" cy="4" r="1.5" fill="#7d8c81"/><circle cx="22" cy="5" r="1.5" fill="#7d8c81"/><circle cx="6" cy="15" r="1.5" fill="#7d8c81"/><circle cx="21" cy="14" r="1.5" fill="#7d8c81"/><path d="M13 9L4 4M13 9l9-4M13 9l-7 6M13 9l8 5" stroke="#3a5545" stroke-width=".7"/></svg>',
+    mid: '<svg viewBox="0 0 26 18">' + [...Array(9)].map((_, i) => `<circle cx="${3 + (i % 3) * 10}" cy="${3 + Math.floor(i / 3) * 6}" r="1.3" fill="#7d8c81"/>`).join('') + '</svg>',
+    micro: '<svg viewBox="0 0 26 18">' + [...Array(15)].map((_, i) => `<circle cx="${2 + (i % 5) * 5.5}" cy="${3 + Math.floor(i / 5) * 6}" r="1" fill="#7d8c81"/>`).join('') + '</svg>',
+    full: '<svg viewBox="0 0 26 18">' + [...Array(24)].map((_, i) => `<circle cx="${2 + (i % 6) * 4.4}" cy="${2 + Math.floor(i / 6) * 4.6}" r=".8" fill="#7d8c81"/>`).join('') + '</svg>',
+  };
+
+  async function renderGraphPage(defaultMode) {
+    const data = await fetchJSON('/api/graph');
+    view.innerHTML = `
+    <div class="page" style="max-width:1200px">
+      <div class="graph-wrap">
+        <canvas id="graph-canvas"></canvas>
+        <div class="graph-legend">
+          <span><b style="background:#31e0a6"></b>Memory Core</span>
+          <span><b style="background:#e8e6da"></b>Workspace</span>
+          <span><b style="background:#f0a51e"></b>File</span>
+          <span><b style="background:#a06df0"></b>Decision</span>
+          <span><b style="background:#5b8ff5"></b>Session</span>
+          <span><b style="background:#ef5da8"></b>Skill</span>
+        </div>
+        <div class="graph-tip" id="graph-tip"></div>
+      </div>
+
+      <div class="graph-bar">
+        <span class="layout-label">LAYOUT</span>
+        <div class="layout-modes">
+          <span class="layout-note">Structured</span>
+          ${['macro', 'mid', 'micro', 'full'].map((m) => `
+            <button class="mode-btn ${m === defaultMode ? 'active' : ''}" data-mode="${m}">${modeIcon[m]}${m.toUpperCase()}</button>
+          `).join('')}
+        </div>
+        <span class="sep"></span>
+        <button class="gb-btn" id="gb-pause">⏸ Pause</button>
+        <button class="gb-btn active" id="gb-flow">≋ Flow</button>
+        <div class="gb-toggle">
+          <button id="gb-lite">LITE</button>
+          <button class="active" id="gb-full">⚡ FULL</button>
+        </div>
+        <label class="links-slider">LINKS <input type="range" id="gb-links" min="5" max="100" value="55"></label>
+        <div class="graph-counts">
+          <span>Nodes <b id="gc-nodes">${data.stats.nodes}</b></span>
+          <span>Edges <b id="gc-edges">${data.stats.edges}</b></span>
+          <span>Recall 7d <b>${data.stats.recall7d}</b></span>
+        </div>
+      </div>
+
+      <div class="row graph-panels">
+        <div class="card">
+          <div class="gp-head">⟳ Recent activity <span class="f"><input placeholder="Filter activity" id="gp-filter"></span></div>
+          <div class="gp-list" id="gp-recent"></div>
+        </div>
+        <div class="card">
+          <div class="gp-head warn">⚠ Stale</div>
+          <div class="gp-list" id="gp-stale"></div>
+        </div>
+        <div class="card">
+          <div class="gp-head bad">▤ Missing</div>
+          <div class="gp-list" id="gp-missing"></div>
+        </div>
+      </div>
+    </div>`;
+
+    const typeColor = { core: '#31e0a6', workspace: '#e8e6da', file: '#f0a51e', decision: '#a06df0', session: '#5b8ff5', skill: '#ef5da8' };
+    const drawPanel = (id, items) => {
+      $(id).innerHTML = items.length
+        ? items.map((it) => `<div class="gp-item"><b style="background:${typeColor[it.type] || '#7d8c81'}"></b><span class="lbl">${esc(it.label)}</span><span class="when">${timeAgo(it.ts)}</span></div>`).join('')
+        : '<div class="gp-empty">Nothing here. Clean core, operator.</div>';
+    };
+    drawPanel('#gp-recent', data.panels.recent);
+    drawPanel('#gp-stale', data.panels.stale);
+    drawPanel('#gp-missing', data.panels.missing);
+    $('#gp-filter').addEventListener('input', (ev) => {
+      const q = ev.target.value.toLowerCase();
+      drawPanel('#gp-recent', data.panels.recent.filter((it) => it.label.toLowerCase().includes(q)));
+    });
+
+    const canvas = $('#graph-canvas');
+    const tip = $('#graph-tip');
+    if (graphInstance) graphInstance.destroy();
+    graphInstance = window.MemoryGraph(canvas, data, {
+      mode: defaultMode,
+      onHover(node, ev) {
+        if (!node) { tip.style.display = 'none'; return; }
+        const rect = canvas.parentElement.getBoundingClientRect();
+        tip.style.display = 'block';
+        tip.style.left = Math.min(rect.width - 240, ev.clientX - rect.left + 14) + 'px';
+        tip.style.top = (ev.clientY - rect.top + 14) + 'px';
+        tip.innerHTML = `<div class="t">${node.type.toUpperCase()}</div>${esc(node.label)}`;
+      },
+    });
+
+    const updateCounts = () => {
+      const c = graphInstance.counts();
+      $('#gc-nodes').textContent = c.nodes;
+      $('#gc-edges').textContent = c.edges;
+    };
+    updateCounts();
+
+    view.querySelectorAll('.mode-btn').forEach((btn) => btn.addEventListener('click', () => {
+      view.querySelectorAll('.mode-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      graphInstance.setMode(btn.dataset.mode);
+      updateCounts();
+    }));
+    $('#gb-pause').addEventListener('click', (ev) => {
+      const on = !ev.currentTarget.classList.toggle('active');
+      graphInstance.setPaused(!on);
+    });
+    $('#gb-flow').addEventListener('click', (ev) => {
+      graphInstance.setFlow(ev.currentTarget.classList.toggle('active'));
+    });
+    $('#gb-lite').addEventListener('click', () => {
+      $('#gb-lite').classList.add('active'); $('#gb-full').classList.remove('active');
+      graphInstance.setQuality('lite');
+    });
+    $('#gb-full').addEventListener('click', () => {
+      $('#gb-full').classList.add('active'); $('#gb-lite').classList.remove('active');
+      graphInstance.setQuality('full');
+    });
+    $('#gb-links').addEventListener('input', (ev) => {
+      graphInstance.setLinkFraction(ev.target.value / 100);
+      updateCounts();
+    });
+  }
+
+  /* ============================ MINISTRY (MoE) ============================ */
+  const PROVIDERS = {
+    claude: { glyph: '⁜', color: '#e8703a' },
+    openai: { glyph: '✳', color: '#10a37f' },
+    gemini: { glyph: '✦', color: '#4e8cff' },
+    glm: { glyph: '❆', color: '#6f86ff' },
+    grok: { glyph: '∅', color: '#9aa0a6' },
+    qwen: { glyph: '◈', color: '#8a5cf6' },
+    deepseek: { glyph: '🐳', color: '#3f6fff' },
+    xiaomi: { glyph: 'Mi', color: '#ff6900' },
+    kimi: { glyph: 'K', color: '#cfd3d8' },
+    minimax: { glyph: '▚', color: '#ff4d94' },
+    tencent: { glyph: 'T', color: '#2f6bff' },
+    nvidia: { glyph: '▣', color: '#76b900' },
+  };
+  // arena = leaderboard rank (null = unranked), cost = $/M output tokens, speed = tokens/sec
+  const MODELS = [
+    { name: 'Claude Opus 4.8', provider: 'claude', arena: 1, cost: 25, speed: 67, ctx: '1M', api: 'claude-opus-4-8' },
+    { name: 'GPT-5.5', provider: 'openai', arena: 2, cost: 14, speed: 92, ctx: '400K', api: null },
+    { name: 'GLM-5.2', provider: 'glm', arena: 4, cost: 3, speed: 105, ctx: '256K', api: null },
+    { name: 'Claude Sonnet 4.6', provider: 'claude', arena: 5, cost: 9, speed: 88, ctx: '1M', api: 'claude-sonnet-5' },
+    { name: 'Gemini 3.1 Pro Preview', provider: 'gemini', arena: 7, cost: 11, speed: 74, ctx: '2M', api: null },
+    { name: 'Gemini 3.5 Flash', provider: 'gemini', arena: 8, cost: 1.5, speed: 160, ctx: '1M', api: null },
+    { name: 'Grok 4.20', provider: 'grok', arena: 9, cost: 8, speed: 71, ctx: '256K', api: null },
+    { name: 'Qwen3.7 Max', provider: 'qwen', arena: 10, cost: 2.4, speed: 96, ctx: '256K', api: null },
+    { name: 'DeepSeek V4 Pro', provider: 'deepseek', arena: 11, cost: 1.8, speed: 84, ctx: '164K', api: null },
+    { name: 'Xiaomi MiMo-V2.5', provider: 'xiaomi', arena: 12, cost: 0.9, speed: 118, ctx: '128K', api: null },
+    { name: 'Kimi K2.6', provider: 'kimi', arena: 13, cost: 1.2, speed: 90, ctx: '256K', api: null },
+    { name: 'MiniMax M3', provider: 'minimax', arena: 14, cost: 1.1, speed: 95, ctx: '245K', api: null },
+    { name: 'Grok 4.3', provider: 'grok', arena: 15, cost: 4, speed: 80, ctx: '256K', api: null },
+    { name: 'GPT-5.3 Codex', provider: 'openai', arena: null, cost: 12, speed: 85, ctx: '400K', api: null },
+    { name: 'Claude Haiku 4.5', provider: 'claude', arena: null, cost: 5, speed: 140, ctx: '200K', api: 'claude-haiku-4-5-20251001' },
+    { name: 'GPT-5.5 Pro', provider: 'openai', arena: null, cost: 60, speed: 40, ctx: '400K', api: null },
+    { name: 'GPT-5.4 Nano', provider: 'openai', arena: null, cost: 0.4, speed: 190, ctx: '128K', api: null },
+    { name: 'Gemini 3.1 Flash Lite', provider: 'gemini', arena: null, cost: 0.3, speed: 210, ctx: '1M', api: null },
+    { name: 'Tencent Hy3 Preview', provider: 'tencent', arena: null, cost: 1, speed: 100, ctx: '128K', api: null },
+    { name: 'Nemotron 3 Ultra 550B', provider: 'nvidia', arena: null, cost: 2.2, speed: 60, ctx: '128K', api: null },
+  ];
+  const modelByName = (n) => MODELS.find((m) => m.name === n);
+  const provIcon = (provider, size = '') =>
+    `<span class="prov-ico ${size}" style="--pc:${(PROVIDERS[provider] || {}).color || '#888'}">${(PROVIDERS[provider] || {}).glyph || '?'}</span>`;
+
+  const COPY_PROVIDER = {
+    claude: (m) => `provider: openrouter, model: anthropic/${(m.api || m.name.toLowerCase().replace(/[ .]/g, '-'))}`,
+    openai: (m) => `provider: openai-codex, model: ${m.name.toLowerCase().replace(/[ ]/g, '-')}`,
+    deepseek: () => 'provider: deepseek, model: deepseek-v4-pro',
+    glm: () => 'provider: zhipu, model: glm-5.2',
+    gemini: (m) => `provider: google, model: ${m.name.toLowerCase().replace(/[ ]/g, '-')}`,
+  };
+  const copyLine = (m) => (COPY_PROVIDER[m.provider] ? COPY_PROVIDER[m.provider](m) : `provider: openrouter, model: ${m.name.toLowerCase().replace(/[ ]/g, '-')}`);
+
+  async function renderMinistry() {
+    let preset = await fetchJSON('/api/ministry');
+    let selected = null;      // model name picked from the bench
+    let tab = 'arena';
+
+    view.innerHTML = `
+    <div class="page" style="max-width:1200px">
+      <div class="min-head">
+        <div class="min-art">✦</div>
+        <div>
+          <div class="min-kicker">✦ PANTHEON · THE ENSEMBLE</div>
+          <h1 class="min-title">MINISTRY OF EXPERTS</h1>
+        </div>
+        <span class="sep" style="flex:1"></span>
+        <button class="gb-btn" id="min-default">↺ USE DEFAULT</button>
+        <button class="gb-btn" id="min-close">CLOSE</button>
+      </div>
+
+      <div class="min-grid">
+        <div>
+          <div class="bench-head">
+            <span class="card-label" style="margin:0">THE BENCH</span>
+            <span class="bench-hint">click a model, then a seat</span>
+            <span style="flex:1"></span>
+            <div class="gb-toggle">
+              <button data-tab="arena" class="active">ARENA</button>
+              <button data-tab="cost">COST</button>
+              <button data-tab="speed">SPEED</button>
+            </div>
+          </div>
+          <div class="bench" id="bench"></div>
+          <div class="card model-detail" id="model-detail"></div>
+        </div>
+
+        <div>
+          <div class="card council-card">
+            <div class="seat-zone">
+              <div class="seat-label">CORE · ORCHESTRATOR</div>
+              <div class="seat seat-core" data-seat="core"></div>
+              <svg class="seat-links" viewBox="0 0 300 40" preserveAspectRatio="none">
+                <path d="M150 0 V14 M150 14 H50 V40 M150 14 V40 M150 14 H250 V40" stroke="#3a5545" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+              </svg>
+              <div class="expert-row">
+                ${[0, 1, 2].map((i) => `
+                  <div class="expert-slot">
+                    <div class="seat-label">EXPERT ${i + 1}</div>
+                    <div class="seat seat-expert" data-seat="${i}"></div>
+                  </div>`).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:14px">
+            <div class="bench-head" style="margin-bottom:8px">
+              <span class="card-label" style="margin:0">MAX TOKENS / CALL</span>
+              <span style="flex:1"></span>
+              <b id="tok-val" style="font-family:var(--serif);font-size:16px">${preset.maxTokens.toLocaleString()}</b>
+            </div>
+            <input type="range" id="tok-slider" min="256" max="16384" step="256" value="${preset.maxTokens}" style="width:100%;accent-color:var(--gold)">
+            <div class="mem-path" style="margin-top:6px;color:var(--green)">Sweet spot — references stay short &amp; sharp, so the core gets clean signal (the HermesBench default).</div>
+            <div class="mem-path" style="margin-top:4px">CHANGE IT ANYTIME · SMALLER USUALLY = SHARPER MOA</div>
+          </div>
+
+          <button class="save-btn" id="min-save">↓ SAVE TO THIS COMPUTER</button>
+          <div class="mem-path" style="margin:8px 2px 0" id="save-note">writes the preset into Hermes' config — no copy-paste, backed up first</div>
+
+          <div class="card copy-card">
+            <div class="bench-head" style="margin-bottom:10px">
+              <span class="card-label" style="margin:0">🜁 COPY FOR HERMES</span>
+              <span style="flex:1"></span>
+              <button class="gb-btn" id="min-copy">COPY</button>
+            </div>
+            <pre id="copy-text"></pre>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    const bench = $('#bench');
+
+    function sortedModels() {
+      const list = [...MODELS];
+      if (tab === 'cost') list.sort((a, b) => a.cost - b.cost);
+      else if (tab === 'speed') list.sort((a, b) => b.speed - a.speed);
+      else list.sort((a, b) => (a.arena || 99) - (b.arena || 99));
+      return list;
+    }
+
+    function seatBadge(name) {
+      if (preset.core.name === name) return '<span class="seat-badge crown">👑</span>';
+      const i = preset.experts.findIndex((e) => e && e.name === name);
+      return i >= 0 ? `<span class="seat-badge num">${i + 1}</span>` : '';
+    }
+
+    function drawBench() {
+      bench.innerHTML = sortedModels().map((m) => {
+        const sub = tab === 'cost' ? `$${m.cost}/M out` : tab === 'speed' ? `${m.speed} t/s` : m.arena ? `Arena #${m.arena}` : 'unranked';
+        return `
+        <button class="bench-card ${selected === m.name ? 'selected' : ''}" data-model="${esc(m.name)}">
+          ${provIcon(m.provider)}
+          <span class="bc-text"><span class="bc-name">${esc(m.name)}</span><span class="bc-sub ${m.arena ? '' : 'unranked'}">${sub}</span></span>
+          ${seatBadge(m.name)}
+        </button>`;
+      }).join('');
+    }
+
+    function drawSeat(el, entry, removable) {
+      if (!entry) { el.innerHTML = '<span class="seat-empty">＋</span>'; el.classList.add('empty'); return; }
+      el.classList.remove('empty');
+      el.innerHTML = `${provIcon(entry.provider, 'big')}<span class="seat-name">${esc(entry.name)}</span>${removable ? '<button class="seat-x" title="Remove">✕</button>' : ''}`;
+    }
+
+    function drawSeats() {
+      drawSeat($('.seat-core'), preset.core, false);
+      view.querySelectorAll('.seat-expert').forEach((el, i) => drawSeat(el, preset.experts[i], true));
+      $('.seat-core').insertAdjacentHTML('beforeend', '<span class="seat-crown">👑</span>');
+    }
+
+    function drawDetail() {
+      const m = modelByName(selected || preset.core.name);
+      if (!m) { $('#model-detail').innerHTML = ''; return; }
+      const quality = m.arena ? Math.max(20, 100 - (m.arena - 1) * 5) : 45;
+      const costPct = Math.min(100, (m.cost / 60) * 100);
+      const speedPct = Math.min(100, (m.speed / 210) * 100);
+      $('#model-detail').innerHTML = `
+        <div class="md-head">${provIcon(m.provider, 'big')}
+          <div><b>${esc(m.name)}</b> ${m.arena ? `<span class="tag ok" style="margin-left:6px">Arena #${m.arena}</span>` : '<span class="tag off" style="margin-left:6px">unranked</span>'}
+          <div class="mem-path" style="margin-top:4px">${m.ctx} CONTEXT · ${m.api ? 'CONNECTABLE (ANTHROPIC)' : 'VIA OPENROUTER'}</div></div>
+        </div>
+        <div class="md-bar"><span>QUALITY</span><div><i style="width:${quality}%;background:var(--green)"></i></div><b>${m.arena ? '#' + m.arena : '—'}</b></div>
+        <div class="md-bar"><span>COST</span><div><i style="width:${costPct}%;background:var(--red)"></i></div><b>$${m.cost}</b></div>
+        <div class="md-bar"><span>SPEED</span><div><i style="width:${speedPct}%;background:var(--gold)"></i></div><b>${m.speed} t/s</b></div>`;
+    }
+
+    function copyText() {
+      return [
+        'Hey Hermes — set up a Mixture of Agents preset for me (your `moa` feature). Call it "ministry".',
+        '',
+        "CORE MODEL — the aggregator. Reads every expert's proposal, writes the final answer, runs the tools:",
+        `  • ${preset.core.name} — ${copyLine(modelByName(preset.core.name) || preset.core)}`,
+        '',
+        'EXPERTS — the reference models. Each proposes in parallel (no tools); the core then decides:',
+        ...preset.experts.filter(Boolean).map((e) => `  • ${e.name} — ${copyLine(modelByName(e.name) || e)}`),
+        '',
+        `MAX TOKENS per expert call: ${preset.maxTokens}.`,
+      ].join('\n');
+    }
+
+    function drawAll() { drawBench(); drawSeats(); drawDetail(); $('#copy-text').textContent = copyText(); }
+    drawAll();
+
+    view.querySelector('.bench-head .gb-toggle').addEventListener('click', (ev) => {
+      const btn = ev.target.closest('[data-tab]');
+      if (!btn) return;
+      tab = btn.dataset.tab;
+      view.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('active', b === btn));
+      drawBench();
+    });
+
+    bench.addEventListener('click', (ev) => {
+      const card = ev.target.closest('.bench-card');
+      if (!card) return;
+      selected = selected === card.dataset.model ? null : card.dataset.model;
+      drawBench(); drawDetail();
+    });
+
+    view.querySelectorAll('.seat').forEach((seat) => seat.addEventListener('click', (ev) => {
+      if (ev.target.classList.contains('seat-x')) {
+        preset.experts[seat.dataset.seat] = null;
+        drawAll();
+        return;
+      }
+      if (!selected) return;
+      const m = modelByName(selected);
+      const entry = { name: m.name, provider: m.provider, api: m.api };
+      if (seat.dataset.seat === 'core') preset.core = entry;
+      else preset.experts[seat.dataset.seat] = entry;
+      selected = null;
+      drawAll();
+    }));
+
+    $('#tok-slider').addEventListener('input', (ev) => {
+      preset.maxTokens = +ev.target.value;
+      $('#tok-val').textContent = preset.maxTokens.toLocaleString();
+      $('#copy-text').textContent = copyText();
+    });
+
+    $('#min-default').addEventListener('click', async () => {
+      preset = {
+        core: { name: 'Claude Opus 4.8', provider: 'claude', api: 'claude-opus-4-8' },
+        experts: [
+          { name: 'GPT-5.5', provider: 'openai', api: null },
+          { name: 'GLM-5.2', provider: 'glm', api: null },
+          { name: 'DeepSeek V4 Pro', provider: 'deepseek', api: null },
+        ],
+        maxTokens: 4096,
+      };
+      $('#tok-slider').value = 4096;
+      $('#tok-val').textContent = '4,096';
+      drawAll();
+    });
+
+    $('#min-save').addEventListener('click', async () => {
+      const body = { ...preset, experts: preset.experts.filter(Boolean) };
+      const out = await fetch('/api/ministry', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
+      $('#save-note').textContent = out.ok ? `✓ saved — ${out.file}` : '⚠ ' + (out.error || 'save failed');
+      $('#save-note').style.color = out.ok ? 'var(--green)' : 'var(--red)';
+    });
+
+    $('#min-copy').addEventListener('click', async (ev) => {
+      await navigator.clipboard.writeText($('#copy-text').textContent).catch(() => {});
+      ev.target.textContent = 'COPIED ✓';
+      setTimeout(() => { ev.target.textContent = 'COPY'; }, 1500);
+    });
+
+    $('#min-close').addEventListener('click', () => { location.hash = '#/home'; });
+  }
+
+  /* ================================ DREAMS ================================ */
+  async function renderDreams() {
+    const dreams = await fetchJSON('/api/dreams');
+    view.innerHTML = `
+    <div class="page">
+      <div class="min-head" style="margin-bottom:6px">
+        <div>
+          <div class="min-kicker">☾ LEVEL 4 · OVERNIGHT AGENTS</div>
+          <h1 class="min-title">Dreams</h1>
+        </div>
+        <span style="flex:1"></span>
+        <button class="save-btn" id="dream-run" style="margin:0;width:auto;padding:0 22px">☾ RUN DREAM NOW</button>
+      </div>
+      <div class="page-sub">While you sleep, ${agent.name} reviews your goals, sessions and memory, then leaves a report here. Scheduled nightly at 03:00 while the server runs.</div>
+      <div id="dream-list" class="row" style="grid-template-columns:1fr">
+        ${dreams.map(dreamCard).join('') || '<div class="card gp-empty">No dreams yet. Run one now, or leave the server running overnight.</div>'}
+      </div>
+    </div>`;
+
+    function dreamCard(d) {
+      return `<div class="card dream-card">
+        <div class="bench-head" style="margin-bottom:10px">
+          <span class="card-label" style="margin:0">☾ DREAM · ${new Date(d.ts).toLocaleString().toUpperCase()}</span>
+          <span style="flex:1"></span>
+          <span class="tag ${d.model === 'simulated' ? 'off' : 'ok'}">${esc(d.model.toUpperCase())}</span>
+          <span class="tag" style="color:var(--muted)">${esc(d.trigger.toUpperCase())}</span>
+        </div>
+        <pre class="dream-body">${esc(d.body)}</pre>
+      </div>`;
+    }
+
+    $('#dream-run').addEventListener('click', async (ev) => {
+      ev.target.disabled = true;
+      ev.target.textContent = '☾ DREAMING…';
+      const dream = await fetch('/api/dreams/run', { method: 'POST' }).then((r) => r.json());
+      ev.target.disabled = false;
+      ev.target.textContent = '☾ RUN DREAM NOW';
+      if (dream.error) { alert(dream.error); return; }
+      $('#dream-list').insertAdjacentHTML('afterbegin', dreamCard(dream));
+      $('#dream-list .gp-empty')?.remove();
+    });
+  }
+
+  /* ================================ SKILLS ================================ */
+  async function renderSkills() {
+    const skills = await fetchJSON('/api/skills');
+    view.innerHTML = `
+    <div class="page">
+      <div class="page-title">Skills</div>
+      <div class="page-sub">Capabilities installed for ${agent.name} · ${skills.length} on disk</div>
+      <div class="row skills-grid">
+        ${skills.map((sk) => `
+          <div class="card skill-card">
+            <h4>${esc(sk.name)}</h4>
+            <p>${esc(sk.description || 'No description.')}</p>
+            <div class="when">UPDATED ${sk.updatedAt ? timeAgo(sk.updatedAt).toUpperCase() : '—'}</div>
+          </div>`).join('') || '<div class="gp-empty">No skills found in the skills directory.</div>'}
+      </div>
+    </div>`;
+  }
+
+  /* =============================== ACTIVITY =============================== */
+  async function renderActivity() {
+    const events = await fetchJSON('/api/activity');
+    view.innerHTML = `
+    <div class="page">
+      <div class="page-title">Activity</div>
+      <div class="page-sub">Everything ${agent.name} has touched, newest first</div>
+      <div class="card feed">
+        ${events.map((e) => `
+          <div class="feed-item">
+            <span class="feed-type ${e.type}">${e.type.toUpperCase()}</span>
+            <div><div class="feed-label">${esc(e.label)}</div><div class="feed-detail">${esc(e.detail)}</div></div>
+            <span class="feed-when">${timeAgo(e.ts)}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  /* =============================== SETTINGS =============================== */
+  function renderSettings() {
+    const s = summary;
+    view.innerHTML = `
+    <div class="page">
+      <div class="page-title">Settings</div>
+      <div class="page-sub">Local operator configuration</div>
+      <div class="card settings-list">
+        <div class="setting-row">
+          <div><div class="k">Chat mode</div><div class="d">Set ANTHROPIC_API_KEY before npm start to go live</div></div>
+          <span class="tag ${s.chatLive ? 'ok' : 'off'}">${s.chatLive ? 'LIVE · API KEY SET' : 'SIMULATED · NO API KEY'}</span>
+        </div>
+        <div class="setting-row">
+          <div><div class="k">Data directory</div><div class="d">Sessions, skills and memory are read from here</div></div>
+          <span class="v">${esc(s.dataDir)}</span>
+        </div>
+        <div class="setting-row">
+          <div><div class="k">Data source</div><div class="d">Falls back to demo data when no sessions exist</div></div>
+          <span class="tag ${s.demo ? 'off' : 'ok'}">${s.demo ? 'DEMO DATA' : 'REAL DATA'}</span>
+        </div>
+        <div class="setting-row">
+          <div><div class="k">Active agent</div><div class="d">Switch agents in the sidebar</div></div>
+          <span class="v">${agent.chip}</span>
+        </div>
+        <div class="setting-row">
+          <div><div class="k">Build</div><div class="d">Claude Code OS operator shell</div></div>
+          <span class="v">${s.version} · ${s.build}</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  /* ================================ ROUTER ================================ */
+  const routes = {
+    home: renderHome,
+    skills: renderSkills,
+    memory: () => renderGraphPage('macro'),
+    graph: () => renderGraphPage('full'),
+    activity: renderActivity,
+    dreams: renderDreams,
+    ministry: renderMinistry,
+    settings: renderSettings,
+  };
+
+  async function navigate() {
+    const route = (location.hash.replace('#/', '') || 'home').split('?')[0];
+    const render = routes[route] || renderHome;
+    document.querySelectorAll('[data-route]').forEach((a) => a.classList.toggle('active', a.dataset.route === route));
+    if (graphInstance) { graphInstance.destroy(); graphInstance = null; }
+    view.innerHTML = '<div class="page" style="color:var(--dim);padding:40px 0">Loading…</div>';
+    await render();
+  }
+
+  function setAgent(key) {
+    agent = AGENTS[key];
+    document.documentElement.dataset.agent = key;
+    document.getElementById('agent-hermes').classList.toggle('active', key === 'hermes');
+    document.getElementById('agent-openclaw').classList.toggle('active', key === 'openclaw');
+    document.getElementById('topbar-agent').textContent = agent.chip;
+    document.getElementById('topbar-agent-name').textContent = agent.name;
+    navigate();
+  }
+  // Clicking an agent selects it and opens its Ministry of Experts config
+  document.getElementById('agent-hermes').addEventListener('click', () => { setAgent('hermes'); location.hash = '#/ministry'; });
+  document.getElementById('agent-openclaw').addEventListener('click', () => { setAgent('openclaw'); location.hash = '#/ministry'; });
+
+  window.addEventListener('hashchange', navigate);
+
+  (async function boot() {
+    summary = await fetchJSON('/api/summary');
+    $('#version-chip').textContent = `${summary.version} · ${summary.build}`;
+    navigate();
+    setInterval(async () => { summary = await fetchJSON('/api/summary'); }, 30000);
+  })();
+})();
