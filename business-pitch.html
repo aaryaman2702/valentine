@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aaryaman — Web Design Studio · The Pitch</title>
+<meta name="description" content="A premium web design & development studio — the business model, the workflow, the investment, and the plan." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============ TOKENS ============ */
+  :root {
+    --bg:        #0C0F16;
+    --bg-2:      #0A0D13;
+    --surface:   #151A26;
+    --surface-2: #1C2231;
+    --line:      rgba(236,231,221,0.10);
+    --line-str:  rgba(236,231,221,0.18);
+    --ink:       #ECE7DD;
+    --ink-soft:  #C3C0B7;
+    --muted:     #7E8493;
+    --accent:    #E9B44C;
+    --accent-dk: #C9922E;
+    --clay:      #B06A47;
+    --glow:      rgba(233,180,76,0.16);
+    --shadow:    0 30px 70px -30px rgba(0,0,0,0.7);
+    --maxw: 1180px;
+  }
+  :root[data-theme="light"] {
+    --bg:        #FBF8F1;
+    --bg-2:      #F3EEE2;
+    --surface:   #FFFFFF;
+    --surface-2: #F6F1E6;
+    --line:      rgba(26,22,16,0.11);
+    --line-str:  rgba(26,22,16,0.20);
+    --ink:       #1A160F;
+    --ink-soft:  #4B473E;
+    --muted:     #8A8172;
+    --accent:    #B4832A;
+    --accent-dk: #8F6415;
+    --clay:      #A9572F;
+    --glow:      rgba(180,131,42,0.14);
+    --shadow:    0 30px 60px -32px rgba(60,45,20,0.28);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Archivo', system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    transition: background .5s ease, color .5s ease;
+  }
+
+  ::selection { background: var(--accent); color: var(--bg); }
+
+  h1,h2,h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 400; text-wrap: balance; margin: 0; }
+  p { margin: 0; }
+  a { color: inherit; }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 32px; }
+
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--accent); font-weight: 500;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::before {
+    content: ""; width: 26px; height: 1px; background: var(--accent); opacity: .7;
+  }
+
+  /* ============ TOP BAR ============ */
+  .topbar {
+    position: fixed; inset: 0 0 auto 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 32px;
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid transparent;
+    transition: border-color .4s ease, padding .4s ease, background .4s ease;
+  }
+  .topbar.scrolled { border-color: var(--line); padding: 11px 32px; }
+  .brand { display: flex; align-items: baseline; gap: 11px; text-decoration: none; }
+  .brand .mark {
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 21px; letter-spacing: .01em;
+    color: var(--ink);
+  }
+  .brand .mark b { color: var(--accent); font-weight: 600; }
+  .brand .sub {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .topbar .right { display: flex; align-items: center; gap: 20px; }
+  .progress-num { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); letter-spacing: .1em; }
+  .progress-num b { color: var(--ink); }
+  .toggle {
+    width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line-str);
+    background: transparent; color: var(--ink); cursor: pointer; font-size: 15px;
+    display: grid; place-items: center; transition: background .25s, transform .25s, border-color .25s;
+  }
+  .toggle:hover { background: var(--surface); transform: rotate(-18deg); }
+  .toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* scroll progress line */
+  .scrollbar { position: fixed; top: 0; left: 0; height: 2px; width: 0%; background: var(--accent); z-index: 101; transition: width .1s linear; }
+
+  /* ============ SECTIONS ============ */
+  section { position: relative; padding: 120px 0; border-top: 1px solid var(--line); }
+  section:first-of-type { border-top: none; }
+  .sec-head { display: flex; align-items: flex-start; gap: 24px; margin-bottom: 54px; }
+  .sec-index {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent);
+    font-weight: 600; padding-top: 8px; min-width: 40px;
+  }
+  .sec-title { font-size: clamp(2rem, 4.4vw, 3.4rem); line-height: 1.02; letter-spacing: -.015em; }
+  .sec-lead { color: var(--ink-soft); font-size: 1.18rem; max-width: 60ch; margin-top: 20px; line-height: 1.65; }
+
+  /* reveal */
+  .reveal { opacity: 0; transform: translateY(26px); transition: opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1); }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal[data-d="1"] { transition-delay: .08s; }
+  .reveal[data-d="2"] { transition-delay: .16s; }
+  .reveal[data-d="3"] { transition-delay: .24s; }
+  .reveal[data-d="4"] { transition-delay: .32s; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+  }
+
+  /* ============ HERO ============ */
+  .hero {
+    min-height: 100vh; display: flex; flex-direction: column; justify-content: center;
+    padding: 140px 0 90px; border-top: none; position: relative; overflow: hidden;
+  }
+  .hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; opacity: .55; }
+  .hero .glow {
+    position: absolute; z-index: 0; width: 60vw; height: 60vw; max-width: 780px; max-height: 780px;
+    right: -14vw; top: 8vh; border-radius: 50%;
+    background: radial-gradient(circle, var(--glow), transparent 68%);
+    filter: blur(20px); pointer-events: none;
+  }
+  .hero .wrap { position: relative; z-index: 2; }
+  .hero-title {
+    font-size: clamp(2.9rem, 8.2vw, 7rem); line-height: .96; letter-spacing: -.03em;
+    margin: 26px 0 0; font-weight: 400;
+  }
+  .hero-title em { font-style: italic; color: var(--accent); }
+  .hero-sub { color: var(--ink-soft); font-size: clamp(1.05rem, 2vw, 1.4rem); max-width: 54ch; margin-top: 30px; line-height: 1.55; }
+  .hero-meta {
+    display: flex; flex-wrap: wrap; gap: 14px 40px; margin-top: 52px;
+    padding-top: 30px; border-top: 1px solid var(--line);
+  }
+  .hero-meta .item .k { font-family:'JetBrains Mono',monospace; font-size: 11px; letter-spacing:.16em; text-transform: uppercase; color: var(--muted); }
+  .hero-meta .item .v { font-family: 'Fraunces', serif; font-size: 1.35rem; margin-top: 4px; }
+  .scroll-hint {
+    position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 2;
+    font-family:'JetBrains Mono',monospace; font-size: 11px; letter-spacing:.2em; text-transform: uppercase;
+    color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 9px;
+  }
+  .scroll-hint .line { width: 1px; height: 34px; background: linear-gradient(var(--accent), transparent); animation: dropline 2s ease-in-out infinite; }
+  @keyframes dropline { 0%,100%{transform:scaleY(.4);transform-origin:top;opacity:.5} 50%{transform:scaleY(1);opacity:1} }
+
+  .hero-title .l { display: inline-block; opacity: 0; transform: translateY(40px) rotate(3deg); animation: rise .9s cubic-bezier(.2,.7,.2,1) forwards; }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce){ .hero-title .l{animation:none;opacity:1;transform:none} .scroll-hint .line{animation:none} }
+
+  /* ============ CARDS / GRIDS ============ */
+  .grid { display: grid; gap: 20px; }
+  .g-2 { grid-template-columns: repeat(2,1fr); }
+  .g-3 { grid-template-columns: repeat(3,1fr); }
+  .g-4 { grid-template-columns: repeat(2,1fr); }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    padding: 28px; transition: border-color .3s, transform .3s, background .3s;
+  }
+  .card:hover { border-color: var(--line-str); transform: translateY(-3px); }
+  .card h3 { font-size: 1.4rem; letter-spacing: -.01em; }
+  .card p { color: var(--ink-soft); margin-top: 10px; font-size: 1rem; }
+
+  .num-card { display: flex; gap: 20px; }
+  .num-card .n { font-family:'JetBrains Mono',monospace; color: var(--accent); font-weight:600; font-size: 13px; padding-top: 5px; }
+
+  .pill-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .pill {
+    font-family:'JetBrains Mono',monospace; font-size: 12px; letter-spacing:.04em;
+    padding: 7px 13px; border: 1px solid var(--line-str); border-radius: 999px; color: var(--ink-soft);
+  }
+  .pill.accent { border-color: var(--accent); color: var(--accent); }
+
+  /* opportunity list */
+  .stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; margin-top: 12px; }
+  .stat { border-top: 2px solid var(--accent); padding-top: 16px; }
+  .stat .big { font-family:'Fraunces',serif; font-size: clamp(2rem,4vw,2.9rem); line-height: 1; }
+  .stat .lbl { color: var(--muted); font-size: .92rem; margin-top: 10px; line-height: 1.4; }
+
+  /* quote */
+  .pullquote {
+    font-family: 'Fraunces', serif; font-style: italic; font-size: clamp(1.6rem, 3.6vw, 2.7rem);
+    line-height: 1.22; letter-spacing: -.01em; max-width: 22ch; color: var(--ink);
+  }
+  .pullquote .hl { color: var(--accent); font-style: normal; }
+  .quote-cite { font-family:'JetBrains Mono',monospace; font-size: 12px; letter-spacing:.16em; text-transform:uppercase; color: var(--muted); margin-top: 26px; }
+
+  /* portfolio */
+  .folio { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
+  .folio a { text-decoration: none; }
+  .folio-item {
+    position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line);
+    aspect-ratio: 4/3; display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 22px; transition: transform .35s, border-color .35s; isolation: isolate;
+  }
+  .folio-item:hover { transform: translateY(-4px); border-color: var(--line-str); }
+  .folio-item .bg { position: absolute; inset: 0; z-index: -1; opacity: .92; transition: transform .5s ease; }
+  .folio-item:hover .bg { transform: scale(1.05); }
+  .folio-item::after { content:""; position:absolute; inset:0; z-index:-1; background: linear-gradient(to top, rgba(6,8,12,.82), rgba(6,8,12,.15) 55%, transparent); }
+  :root[data-theme="light"] .folio-item::after { background: linear-gradient(to top, rgba(10,10,14,.7), rgba(10,10,14,.05) 60%, transparent); }
+  .folio-item .cat { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color: rgba(255,255,255,.75); }
+  .folio-item .nm { font-family:'Fraunces',serif; font-size:1.5rem; color:#fff; margin-top:4px; line-height:1.05; }
+  .folio-item .status { position:absolute; top:16px; right:16px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:#fff; background: rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.25); padding:4px 9px; border-radius:999px; backdrop-filter: blur(4px); }
+
+  /* workflow tools */
+  .tool { display: grid; grid-template-columns: 200px 1fr; gap: 30px; padding: 30px 0; border-top: 1px solid var(--line); align-items: start; }
+  .tool:last-child { border-bottom: 1px solid var(--line); }
+  .tool .head h3 { font-size: 1.55rem; }
+  .tool .head .role { font-family:'JetBrains Mono',monospace; font-size: 11px; letter-spacing:.14em; text-transform:uppercase; color: var(--accent); margin-top: 8px; display:block; }
+  .tool .head .cost { color: var(--muted); font-size: .92rem; margin-top: 12px; font-family:'JetBrains Mono',monospace; }
+
+  /* offerings */
+  .offer-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .offer {
+    padding: 30px 26px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    transition: background .3s; position: relative;
+  }
+  .offer:hover { background: var(--surface); }
+  .offer .oi { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--accent); }
+  .offer h3 { font-size: 1.3rem; margin-top: 14px; }
+  .offer p { color: var(--ink-soft); font-size: .95rem; margin-top: 8px; }
+
+  /* pricing */
+  .price-table { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .price-row {
+    display: grid; grid-template-columns: 1.4fr 1fr auto; align-items: center; gap: 20px;
+    padding: 24px 28px; border-top: 1px solid var(--line); transition: background .3s;
+  }
+  .price-row:first-child { border-top: none; }
+  .price-row:hover { background: var(--surface); }
+  .price-row .svc { font-family:'Fraunces',serif; font-size: 1.35rem; }
+  .price-row .desc { color: var(--muted); font-size: .9rem; }
+  .price-row .amt {
+    font-family:'JetBrains Mono',monospace; font-weight: 600; font-size: 1.15rem; color: var(--ink);
+    font-variant-numeric: tabular-nums; text-align: right; justify-self: end;
+  }
+  .price-note { margin-top: 22px; color: var(--ink-soft); font-size: .98rem; display:flex; gap:12px; align-items:flex-start; }
+  .price-note .tag { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); border:1px solid var(--accent); padding:3px 9px; border-radius:999px; white-space:nowrap; }
+
+  /* investment */
+  .invest-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+  .invest {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 30px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .invest .name { font-family:'Fraunces',serif; font-size: 1.5rem; }
+  .invest .amt { font-family:'JetBrains Mono',monospace; font-size: 2rem; color: var(--accent); font-weight: 600; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .invest .per { color: var(--muted); font-size: .85rem; font-family:'JetBrains Mono',monospace; }
+  .invest .use { color: var(--ink-soft); font-size: .95rem; margin-top: 12px; }
+  .analogy {
+    margin-top: 30px; padding: 26px 30px; border-left: 3px solid var(--accent); background: var(--surface);
+    border-radius: 0 12px 12px 0; color: var(--ink-soft); font-size: 1.08rem;
+  }
+  .analogy b { color: var(--ink); font-weight: 600; }
+
+  /* ROI */
+  .roi-vis { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: stretch; }
+  .roi-bar { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 34px; display:flex; flex-direction:column; }
+  .roi-bar .lbl { font-family:'JetBrains Mono',monospace; font-size: 11px; letter-spacing:.14em; text-transform:uppercase; color: var(--muted); }
+  .bar-track { margin-top: auto; padding-top: 26px; display: flex; flex-direction: column; gap: 18px; }
+  .bar { }
+  .bar .top { display:flex; justify-content: space-between; align-items:baseline; margin-bottom: 8px; }
+  .bar .top .t { font-size: .95rem; color: var(--ink-soft); }
+  .bar .top .n { font-family:'JetBrains Mono',monospace; font-weight:600; font-variant-numeric: tabular-nums; }
+  .bar .rail { height: 12px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .bar .fill { height: 100%; border-radius: 999px; width: 0; transition: width 1.4s cubic-bezier(.2,.7,.2,1); }
+  .bar .fill.cost { background: var(--clay); }
+  .bar .fill.rev { background: linear-gradient(90deg, var(--accent-dk), var(--accent)); }
+
+  /* process flow */
+  .flow { display: flex; flex-direction: column; gap: 0; counter-reset: step; }
+  .step {
+    display: grid; grid-template-columns: 62px 1fr; gap: 24px; align-items: start;
+    padding: 22px 0; position: relative;
+  }
+  .step .dot {
+    width: 62px; height: 62px; border-radius: 50%; border: 1px solid var(--line-str);
+    display: grid; place-items: center; font-family:'JetBrains Mono',monospace; font-weight:600;
+    color: var(--accent); font-size: 15px; background: var(--surface); position: relative; z-index: 2;
+    font-variant-numeric: tabular-nums;
+  }
+  .step:not(:last-child) .dot::after {
+    content:""; position:absolute; top: 62px; left: 50%; transform: translateX(-50%);
+    width: 1px; height: calc(100% + 44px); background: linear-gradient(var(--line-str), var(--line)); z-index: 1;
+  }
+  .step .body h3 { font-size: 1.3rem; padding-top: 14px; }
+  .step .body p { color: var(--ink-soft); font-size: .98rem; margin-top: 6px; }
+
+  /* vision */
+  .vision-lead { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; }
+  .vision-services { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px 30px; margin-top: 8px; }
+  .vsvc { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .vsvc .mk { color: var(--accent); font-family:'JetBrains Mono',monospace; font-size: 12px; }
+  .vsvc .tx { font-size: 1.02rem; }
+
+  /* closing */
+  .closing { text-align: left; }
+  .closing .big-line { font-family:'Fraunces',serif; font-size: clamp(2rem,5vw,3.6rem); line-height: 1.08; letter-spacing:-.02em; max-width: 20ch; }
+  .closing .big-line .hl { color: var(--accent); font-style: italic; }
+  .checklist { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px 40px; margin-top: 46px; }
+  .check { display: flex; gap: 14px; align-items: flex-start; padding: 16px 0; border-top: 1px solid var(--line); }
+  .check .cbox { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--accent); display:grid; place-items:center; color: var(--accent); font-size: 13px; margin-top: 2px; }
+  .check .ct { font-size: 1.05rem; }
+  .kicker {
+    margin-top: 56px; padding: 34px 38px; background: var(--surface); border: 1px solid var(--line-str);
+    border-radius: 18px; font-family:'Fraunces',serif; font-size: clamp(1.25rem,2.6vw,1.7rem); line-height:1.4; font-style: italic;
+  }
+  .kicker b { font-style: normal; color: var(--accent); }
+
+  /* footer */
+  footer { padding: 70px 0 90px; border-top: 1px solid var(--line); }
+  .foot { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 24px; }
+  .foot .big { font-family:'Fraunces',serif; font-size: clamp(2.2rem,6vw,4rem); line-height: .95; letter-spacing: -.02em; }
+  .foot .big b { color: var(--accent); font-weight: 400; }
+  .foot .meta { font-family:'JetBrains Mono',monospace; font-size: 12px; color: var(--muted); letter-spacing: .1em; text-align: right; line-height: 1.9; }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 900px) {
+    body { font-size: 16px; }
+    .wrap { padding: 0 22px; }
+    section { padding: 84px 0; }
+    .g-2, .g-3, .g-4 { grid-template-columns: 1fr; }
+    .stat-row { grid-template-columns: repeat(2,1fr); }
+    .folio { grid-template-columns: 1fr 1fr; }
+    .offer-grid { grid-template-columns: 1fr 1fr; }
+    .tool { grid-template-columns: 1fr; gap: 12px; }
+    .invest-grid { grid-template-columns: 1fr; }
+    .roi-vis { grid-template-columns: 1fr; }
+    .vision-lead { grid-template-columns: 1fr; gap: 26px; }
+    .vision-services { grid-template-columns: 1fr; }
+    .checklist { grid-template-columns: 1fr; }
+    .price-row { grid-template-columns: 1fr auto; }
+    .price-row .desc { display: none; }
+    .sec-head { flex-direction: column; gap: 8px; margin-bottom: 40px; }
+    .progress-num { display: none; }
+    .brand .sub { display: none; }
+  }
+  @media (max-width: 540px) {
+    .folio { grid-template-columns: 1fr; }
+    .offer-grid { grid-template-columns: 1fr; }
+    .hero-meta { gap: 18px 28px; }
+  }
+</style>
+</head>
+<body>
+  <div class="scrollbar" id="scrollbar"></div>
+
+  <!-- TOP BAR -->
+  <header class="topbar" id="topbar">
+    <a class="brand" href="#top">
+      <span class="mark">Aaryaman<b>.</b></span>
+      <span class="sub">Design&nbsp;·&nbsp;Development&nbsp;Studio</span>
+    </a>
+    <div class="right">
+      <span class="progress-num mono"><b id="pcur">00</b> / 12</span>
+      <button class="toggle" id="toggle" aria-label="Toggle light and dark theme">◑</button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero" id="top">
+    <canvas id="grid-canvas" aria-hidden="true"></canvas>
+    <div class="glow" aria-hidden="true"></div>
+    <div class="wrap">
+      <span class="eyebrow">Business Pitch · 2026</span>
+      <h1 class="hero-title" id="heroTitle">
+        <span class="l" style="animation-delay:.05s">Building</span> <span class="l" style="animation-delay:.15s">a</span> <span class="l" style="animation-delay:.25s"><em>premium</em></span><br>
+        <span class="l" style="animation-delay:.35s">web</span> <span class="l" style="animation-delay:.45s">studio.</span>
+      </h1>
+      <p class="hero-sub">I design and develop beautifully crafted, high-performance websites that help businesses build a modern online presence — the kind of work that wins trust and wins clients.</p>
+      <div class="hero-meta">
+        <div class="item"><div class="k">The model</div><div class="v">Premium web design</div></div>
+        <div class="item"><div class="k">The method</div><div class="v">AI-accelerated craft</div></div>
+        <div class="item"><div class="k">The goal</div><div class="v">A real agency</div></div>
+      </div>
+    </div>
+    <div class="scroll-hint" aria-hidden="true"><span>Scroll</span><span class="line"></span></div>
+  </section>
+
+  <div class="wrap">
+
+  <!-- 01 INTRODUCTION -->
+  <section id="s1">
+    <div class="sec-head reveal">
+      <span class="sec-index">01</span>
+      <div>
+        <h2 class="sec-title">The business, in one sentence.</h2>
+        <p class="sec-lead">I am building a premium web design and development studio — helping businesses establish a modern online presence through beautifully designed, high-performance websites.</p>
+      </div>
+    </div>
+    <div class="grid g-2">
+      <div class="card reveal">
+        <h3>What this is</h3>
+        <p>A design-and-build practice focused on quality over volume. Every site is crafted to look premium, load fast, and feel effortless on any device — the kind of work a serious business is proud to put its name on.</p>
+      </div>
+      <div class="card reveal" data-d="1">
+        <h3>What this is <em>not</em></h3>
+        <p>This is not about selling AI-generated websites. AI is a productivity tool — like a faster hand at the desk. I use it to deliver agency-quality work faster, but the design taste, the decisions, and the craft are mine.</p>
+      </div>
+    </div>
+    <div class="reveal" data-d="2" style="margin-top:48px">
+      <p class="pullquote">AI doesn't replace the craft. It lets me <span class="hl">ship the craft faster.</span></p>
+    </div>
+  </section>
+
+  <!-- 02 OPPORTUNITY -->
+  <section id="s2">
+    <div class="sec-head reveal">
+      <span class="sec-index">02</span>
+      <div>
+        <h2 class="sec-title">Every business needs a website that works.</h2>
+        <p class="sec-lead">A website is no longer optional. For most businesses it is the first impression, the storefront, and the salesperson — all at once.</p>
+      </div>
+    </div>
+    <div class="grid g-3">
+      <div class="card num-card reveal"><span class="n">A</span><div><h3>Credibility</h3><p>A polished website signals that a business is real, professional, and worth trusting before a word is spoken.</p></div></div>
+      <div class="card num-card reveal" data-d="1"><span class="n">B</span><div><h3>First impression</h3><p>Most people judge a business by its website within seconds. That first glance decides whether they stay or leave.</p></div></div>
+      <div class="card num-card reveal" data-d="2"><span class="n">C</span><div><h3>Mobile-first world</h3><p>Customers browse on their phones. A modern, mobile-friendly site is now the baseline expectation, not a bonus.</p></div></div>
+    </div>
+    <div class="stat-row reveal" data-d="2" style="margin-top:36px">
+      <div class="stat"><div class="big">1st</div><div class="lbl">A website is often the very first impression of a business</div></div>
+      <div class="stat"><div class="big">Many</div><div class="lbl">Existing business websites are outdated or built years ago</div></div>
+      <div class="stat"><div class="big">More</div><div class="lbl">Good design directly generates more leads and customers</div></div>
+      <div class="stat"><div class="big">Now</div><div class="lbl">Businesses are actively looking to modernise their presence</div></div>
+    </div>
+  </section>
+
+  <!-- 03 PROBLEM -->
+  <section id="s3">
+    <div class="sec-head reveal">
+      <span class="sec-index">03</span>
+      <div>
+        <h2 class="sec-title">But nobody hires a designer they can't see.</h2>
+      </div>
+    </div>
+    <div class="grid g-2" style="align-items:center">
+      <div class="reveal">
+        <p class="pullquote">A business rarely hires a web designer <span class="hl">without seeing the work first.</span></p>
+        <p class="quote-cite">The single biggest barrier to the first client</p>
+      </div>
+      <div class="card reveal" data-d="1">
+        <h3>The chicken-and-egg problem</h3>
+        <p>Clients want proof. They want to see real, finished websites before they trust anyone with their brand and their budget. But you can't show a portfolio you haven't built yet.</p>
+        <p style="margin-top:16px">So the challenge isn't skill — it's <b style="color:var(--ink)">evidence</b>. Before I can charge premium prices, I need a body of work that speaks for itself. A strong portfolio isn't a nice-to-have. It's the entry ticket.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 SOLUTION -->
+  <section id="s4">
+    <div class="sec-head reveal">
+      <span class="sec-index">04</span>
+      <div>
+        <h2 class="sec-title">So I build the proof first.</h2>
+        <p class="sec-lead">My immediate goal is to build a collection of premium websites — each showing a different design style and industry — all live on the internet as real, clickable proof of what I can do.</p>
+      </div>
+    </div>
+    <div class="folio reveal" data-d="1">
+      <div class="folio-item"><div class="bg" style="background:linear-gradient(150deg,#2a2f45,#4a3d64)"></div><span class="status">Live</span><span class="cat">Personal</span><span class="nm">My Portfolio</span></div>
+      <div class="folio-item"><div class="bg" style="background:linear-gradient(150deg,#6b4a2f,#c98a3f)"></div><span class="status">Concept</span><span class="cat">Hospitality</span><span class="nm">Break of Dawn</span></div>
+      <div class="folio-item"><div class="bg" style="background:linear-gradient(150deg,#123536,#2f7d6b)"></div><span class="status">Concept</span><span class="cat">Brand</span><span class="nm">Redefine Byrd</span></div>
+      <div class="folio-item"><div class="bg" style="background:linear-gradient(150deg,#1c3a52,#3f88b0)"></div><span class="status">Concept</span><span class="cat">Healthcare</span><span class="nm">Healthcare Site</span></div>
+      <div class="folio-item"><div class="bg" style="background:linear-gradient(150deg,#2b2b33,#8a7350)"></div><span class="status">Concept</span><span class="cat">Luxury</span><span class="nm">Luxury Landing</span></div>
+      <div class="folio-item"><div class="bg" style="background:linear-gradient(150deg,#3a2540,#7d4a86)"></div><span class="status">Concept</span><span class="cat">Exploration</span><span class="nm">More Concepts</span></div>
+    </div>
+    <p class="sec-lead reveal" data-d="2" style="margin-top:34px">Each one goes live. Each one becomes a link I can send. When I approach a business, I'm not describing what I <em>could</em> do — I'm showing what I've <em>already</em> done.</p>
+  </section>
+
+  <!-- 05 WORKFLOW -->
+  <section id="s5">
+    <div class="sec-head reveal">
+      <span class="sec-index">05</span>
+      <div>
+        <h2 class="sec-title">The tools, and exactly what each one does.</h2>
+        <p class="sec-lead">This isn't a pile of random subscriptions. Each tool has a specific job in the production line — from first idea to a live, polished website.</p>
+      </div>
+    </div>
+    <div class="reveal" data-d="1">
+      <div class="tool">
+        <div class="head"><h3>ChatGPT Plus</h3><span class="role">Strategy &amp; Words</span><span class="cost">≈ US$20 / month</span></div>
+        <div class="pill-list">
+          <span class="pill">Strategy</span><span class="pill">Website planning</span><span class="pill">UX ideas</span><span class="pill">Copywriting</span><span class="pill">Debugging</span><span class="pill">Business guidance</span>
+        </div>
+      </div>
+      <div class="tool">
+        <div class="head"><h3>Claude Max</h3><span class="role">Primary Build Engine</span><span class="cost">≈ US$234 / month</span></div>
+        <div class="pill-list">
+          <span class="pill accent">Website development</span><span class="pill">Building components</span><span class="pill">Coding</span><span class="pill">Animations</span><span class="pill">Optimization</span><span class="pill">Rapid iteration</span>
+        </div>
+      </div>
+      <div class="tool">
+        <div class="head"><h3>Higgsfield Pro</h3><span class="role">Motion &amp; Visuals</span><span class="cost">≈ ₹27,000 / year</span></div>
+        <div class="pill-list">
+          <span class="pill">Hero videos</span><span class="pill">Motion graphics</span><span class="pill">Product animations</span><span class="pill">Premium visual assets</span>
+        </div>
+      </div>
+      <div class="tool">
+        <div class="head"><h3>Vercel</h3><span class="role">Deploy &amp; Host</span><span class="cost">Publishing layer</span></div>
+        <div class="pill-list">
+          <span class="pill">Deploy websites</span><span class="pill">Publicly accessible</span><span class="pill">Host projects online</span>
+        </div>
+      </div>
+    </div>
+    <div class="card reveal" data-d="2" style="margin-top:26px">
+      <h3>Coming next: GitHub</h3>
+      <p>As the studio matures, GitHub becomes the backbone for version control and clean, professional client handovers — so every project is delivered the way a real agency delivers it.</p>
+    </div>
+  </section>
+
+  <!-- 06 OFFERINGS -->
+  <section id="s6">
+    <div class="sec-head reveal">
+      <span class="sec-index">06</span>
+      <div>
+        <h2 class="sec-title">What I'll offer clients.</h2>
+        <p class="sec-lead">A focused menu of services — each one something a real business will pay for.</p>
+      </div>
+    </div>
+    <div class="offer-grid reveal" data-d="1">
+      <div class="offer"><span class="oi">01</span><h3>Landing Pages</h3><p>Single-purpose pages built to convert — launches, campaigns, and product drops.</p></div>
+      <div class="offer"><span class="oi">02</span><h3>Business Websites</h3><p>Complete multi-page sites that give a business a credible, modern home online.</p></div>
+      <div class="offer"><span class="oi">03</span><h3>Premium Brand Websites</h3><p>High-end, design-led experiences with custom motion and a distinctive identity.</p></div>
+      <div class="offer"><span class="oi">04</span><h3>Portfolio Websites</h3><p>Personal and creative sites that make individuals and studios look their best.</p></div>
+      <div class="offer"><span class="oi">05</span><h3>Website Redesigns</h3><p>Turning dated, underperforming sites into fast, modern, high-converting ones.</p></div>
+      <div class="offer"><span class="oi">06</span><h3>Brand &amp; Marketing Assets</h3><p>Hero videos, motion graphics, and visuals that make the whole brand feel premium.</p></div>
+    </div>
+  </section>
+
+  <!-- 07 PRICING -->
+  <section id="s7">
+    <div class="sec-head reveal">
+      <span class="sec-index">07</span>
+      <div>
+        <h2 class="sec-title">Pricing strategy.</h2>
+        <p class="sec-lead">Estimated starting ranges. These are entry prices — they rise as experience, reputation, and the portfolio grow.</p>
+      </div>
+    </div>
+    <div class="price-table reveal" data-d="1">
+      <div class="price-row"><div><div class="svc">Landing Pages</div><div class="desc">Single-page, conversion-focused</div></div><div class="desc" style="text-align:right"></div><div class="amt">₹15,000 – ₹30,000</div></div>
+      <div class="price-row"><div><div class="svc">Business Websites</div><div class="desc">Full multi-page presence</div></div><div class="desc"></div><div class="amt">₹35,000 – ₹80,000</div></div>
+      <div class="price-row"><div><div class="svc">Premium Websites</div><div class="desc">Design-led, custom motion</div></div><div class="desc"></div><div class="amt">₹80,000 – ₹2,00,000+</div></div>
+      <div class="price-row"><div><div class="svc">Portfolio Websites</div><div class="desc">Personal &amp; creative</div></div><div class="desc"></div><div class="amt">₹20,000 – ₹50,000</div></div>
+      <div class="price-row"><div><div class="svc">Website Redesigns</div><div class="desc">Modernising existing sites</div></div><div class="desc"></div><div class="amt">₹30,000 – ₹1,00,000</div></div>
+    </div>
+    <div class="price-note reveal" data-d="2">
+      <span class="tag">Grows over time</span>
+      <span>Pricing starts here to win the first clients. As the portfolio and reputation build, the same work commands significantly higher rates.</span>
+    </div>
+  </section>
+
+  <!-- 08 INVESTMENT -->
+  <section id="s8">
+    <div class="sec-head reveal">
+      <span class="sec-index">08</span>
+      <div>
+        <h2 class="sec-title">The investment — the tools of the trade.</h2>
+        <p class="sec-lead">Every craft has its equipment. These are mine. They're the cost of producing agency-quality work.</p>
+      </div>
+    </div>
+    <div class="invest-grid reveal" data-d="1">
+      <div class="invest"><div class="name">Claude Max</div><div class="amt">$234</div><div class="per">per month</div><div class="use">The primary engine for building, coding, and animating every website.</div></div>
+      <div class="invest"><div class="name">ChatGPT Plus</div><div class="amt">$20</div><div class="per">per month</div><div class="use">Strategy, planning, copywriting, and problem-solving support.</div></div>
+      <div class="invest"><div class="name">Higgsfield Pro</div><div class="amt">₹27,000</div><div class="per">per year</div><div class="use">Cinematic hero videos and premium motion assets.</div></div>
+    </div>
+    <div class="analogy reveal" data-d="2">
+      These aren't luxuries — they're <b>professional equipment</b>. A photographer invests in cameras and lenses. An architect pays for professional software. This is exactly the same: the tools that make the quality of the work possible.
+    </div>
+  </section>
+
+  <!-- 09 ROI -->
+  <section id="s9">
+    <div class="sec-head reveal">
+      <span class="sec-index">09</span>
+      <div>
+        <h2 class="sec-title">Why the numbers work.</h2>
+        <p class="sec-lead">The investment isn't a cost sitting on its own — it's paid back by the work it makes possible.</p>
+      </div>
+    </div>
+    <div class="roi-vis">
+      <div class="roi-bar reveal">
+        <div class="lbl">One project vs. the tooling</div>
+        <div class="bar-track" id="roiBars">
+          <div class="bar">
+            <div class="top"><span class="t">A single premium project</span><span class="n">₹60,000 – ₹1,00,000</span></div>
+            <div class="rail"><div class="fill rev" data-w="100%"></div></div>
+          </div>
+          <div class="bar">
+            <div class="top"><span class="t">Monthly software tooling</span><span class="n">A fraction of it</span></div>
+            <div class="rail"><div class="fill cost" data-w="26%"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="roi-bar reveal" data-d="1" style="justify-content:flex-start">
+        <div class="lbl">The compounding effect</div>
+        <p style="color:var(--ink-soft);margin-top:18px;font-size:1.05rem;line-height:1.6">
+          A single website project earning <b style="color:var(--ink)">₹60,000–₹1,00,000</b> recovers a significant portion — often all — of the initial software investment.
+        </p>
+        <p style="color:var(--ink-soft);margin-top:16px;font-size:1.05rem;line-height:1.6">
+          And it doesn't stop there. Every project makes the portfolio stronger, which attracts the next client more easily. Future projects become <b style="color:var(--accent)">increasingly profitable</b> — the tools are paid off once, the portfolio keeps earning.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 PROCESS -->
+  <section id="s10">
+    <div class="sec-head reveal">
+      <span class="sec-index">10</span>
+      <div>
+        <h2 class="sec-title">How a client project runs.</h2>
+        <p class="sec-lead">A clear, professional process from first contact to final handover — the same way a real agency operates.</p>
+      </div>
+    </div>
+    <div class="flow reveal" data-d="1">
+      <div class="step"><div class="dot">01</div><div class="body"><h3>Lead generation</h3><p>Reaching businesses with real, live work to show.</p></div></div>
+      <div class="step"><div class="dot">02</div><div class="body"><h3>Discovery call</h3><p>Understanding the client, their brand, and what they need.</p></div></div>
+      <div class="step"><div class="dot">03</div><div class="body"><h3>Understand business goals</h3><p>Defining what success looks like for their website.</p></div></div>
+      <div class="step"><div class="dot">04</div><div class="body"><h3>Research</h3><p>Studying their market, audience, and competitors.</p></div></div>
+      <div class="step"><div class="dot">05</div><div class="body"><h3>Design</h3><p>Crafting a look and feel that fits the brand perfectly.</p></div></div>
+      <div class="step"><div class="dot">06</div><div class="body"><h3>Development</h3><p>Building it fast, clean, and high-performance.</p></div></div>
+      <div class="step"><div class="dot">07</div><div class="body"><h3>Testing</h3><p>Checking every device, every screen, every detail.</p></div></div>
+      <div class="step"><div class="dot">08</div><div class="body"><h3>Deployment</h3><p>Taking the site live and publicly accessible.</p></div></div>
+      <div class="step"><div class="dot">09</div><div class="body"><h3>Client review</h3><p>Walking the client through it and refining together.</p></div></div>
+      <div class="step"><div class="dot">10</div><div class="body"><h3>Final delivery</h3><p>Polishing and delivering the finished product.</p></div></div>
+      <div class="step"><div class="dot">11</div><div class="body"><h3>Client handover</h3><p>Handing over everything they need to own it going forward.</p></div></div>
+    </div>
+  </section>
+
+  <!-- 11 VISION -->
+  <section id="s11">
+    <div class="sec-head reveal">
+      <span class="sec-index">11</span>
+      <div>
+        <h2 class="sec-title">Where this goes.</h2>
+      </div>
+    </div>
+    <div class="vision-lead">
+      <div class="reveal">
+        <p class="pullquote">A premium digital agency known for <span class="hl">exceptional websites and digital experiences.</span></p>
+        <p class="sec-lead" style="margin-top:24px">The websites are the beginning. The long-term goal is a full studio — trusted, recognised, and building the kind of work that defines brands online.</p>
+      </div>
+      <div class="reveal" data-d="1">
+        <div class="eyebrow" style="margin-bottom:8px">Future services</div>
+        <div class="vision-services">
+          <div class="vsvc"><span class="mk">→</span><span class="tx">E-commerce websites</span></div>
+          <div class="vsvc"><span class="mk">→</span><span class="tx">Shopify development</span></div>
+          <div class="vsvc"><span class="mk">→</span><span class="tx">AI integrations</span></div>
+          <div class="vsvc"><span class="mk">→</span><span class="tx">Booking systems</span></div>
+          <div class="vsvc"><span class="mk">→</span><span class="tx">Custom web apps</span></div>
+          <div class="vsvc"><span class="mk">→</span><span class="tx">Brand strategy</span></div>
+          <div class="vsvc"><span class="mk">→</span><span class="tx">Product videos</span></div>
+          <div class="vsvc"><span class="mk">→</span><span class="tx">Marketing assets</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 CLOSING -->
+  <section id="s12">
+    <div class="sec-head reveal">
+      <span class="sec-index">12</span>
+      <div>
+        <h2 class="sec-title">Why this investment, and why now.</h2>
+      </div>
+    </div>
+    <div class="closing">
+      <p class="big-line reveal">Before businesses pay premium prices, they need to see <span class="hl">proof of work.</span></p>
+      <p class="sec-lead reveal" data-d="1" style="margin-top:24px">So the first investment is simple: build an exceptional portfolio. Everything else follows from that.</p>
+
+      <div class="checklist reveal" data-d="1">
+        <div class="check"><span class="cbox">✓</span><span class="ct">Build multiple high-quality websites</span></div>
+        <div class="check"><span class="cbox">✓</span><span class="ct">Launch my own portfolio</span></div>
+        <div class="check"><span class="cbox">✓</span><span class="ct">Publish everything online</span></div>
+        <div class="check"><span class="cbox">✓</span><span class="ct">Approach businesses with real examples</span></div>
+        <div class="check"><span class="cbox">✓</span><span class="ct">Win paying clients</span></div>
+        <div class="check"><span class="cbox">✓</span><span class="ct">Reinvest income into future growth</span></div>
+      </div>
+
+      <div class="kicker reveal" data-d="2">
+        The software subscriptions are <b>not the business.</b> They are professional tools — used to build a real, sustainable business.
+      </div>
+    </div>
+  </section>
+
+  </div><!-- /wrap -->
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="wrap">
+      <div class="foot">
+        <div class="big">Let's build it.<b>.</b></div>
+        <div class="meta">
+          Aaryaman — Design &amp; Development Studio<br>
+          Business Pitch · 2026<br>
+          Crafted, not generated.
+        </div>
+      </div>
+    </div>
+  </footer>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- theme toggle ---- */
+  var root = document.documentElement, toggle = document.getElementById('toggle');
+  toggle.addEventListener('click', function(){
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+  });
+
+  /* ---- scrollbar + topbar + section counter ---- */
+  var bar = document.getElementById('scrollbar');
+  var topbar = document.getElementById('topbar');
+  var pcur = document.getElementById('pcur');
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section[id^="s"]'));
+  function onScroll(){
+    var st = window.scrollY;
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.width = (h > 0 ? (st / h) * 100 : 0) + '%';
+    topbar.classList.toggle('scrolled', st > 40);
+    var cur = 0, mid = st + window.innerHeight * 0.35;
+    for (var i=0;i<sections.length;i++){ if (sections[i].offsetTop <= mid) cur = i+1; }
+    pcur.textContent = cur === 0 ? '00' : (cur < 10 ? '0'+cur : ''+cur);
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  /* ---- reveal on scroll ---- */
+  var revs = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window && !reduce){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, {threshold: 0.12, rootMargin: '0px 0px -8% 0px'});
+    revs.forEach(function(el){ io.observe(el); });
+  } else {
+    revs.forEach(function(el){ el.classList.add('in'); });
+  }
+
+  /* ---- ROI bars fill when visible ---- */
+  var roi = document.getElementById('roiBars');
+  if (roi){
+    var fills = roi.querySelectorAll('.fill');
+    var roiIO = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting){
+          fills.forEach(function(f){ f.style.width = f.getAttribute('data-w'); });
+          roiIO.disconnect();
+        }
+      });
+    }, {threshold: 0.4});
+    roiIO.observe(roi);
+    if (reduce){ fills.forEach(function(f){ f.style.transition='none'; f.style.width = f.getAttribute('data-w'); }); }
+  }
+
+  /* ---- hero blueprint grid canvas ---- */
+  var canvas = document.getElementById('grid-canvas');
+  if (canvas){
+    var ctx = canvas.getContext('2d');
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var t = 0, raf;
+    function size(){
+      var r = canvas.getBoundingClientRect();
+      canvas.width = r.width * dpr; canvas.height = r.height * dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    size();
+    window.addEventListener('resize', size);
+    function stroke(){
+      var w = canvas.width/dpr, h = canvas.height/dpr;
+      ctx.clearRect(0,0,w,h);
+      var gap = 46;
+      var accent = getComputedStyle(root).getPropertyValue('--accent').trim();
+      ctx.lineWidth = 1;
+      for (var x = gap; x < w; x += gap){
+        var a = 0.03 + 0.02 * Math.sin((x*0.04) + t);
+        ctx.strokeStyle = 'rgba(233,180,76,'+a.toFixed(3)+')';
+        ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
+      }
+      for (var y = gap; y < h; y += gap){
+        var b = 0.03 + 0.02 * Math.cos((y*0.04) + t);
+        ctx.strokeStyle = 'rgba(233,180,76,'+b.toFixed(3)+')';
+        ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+      }
+      t += 0.01;
+      raf = requestAnimationFrame(stroke);
+    }
+    if (!reduce){ stroke(); }
+    else {
+      // static single-pass grid
+      var w = canvas.width/dpr, h = canvas.height/dpr, gap = 46;
+      ctx.strokeStyle = 'rgba(233,180,76,0.045)'; ctx.lineWidth = 1;
+      for (var x=gap;x<w;x+=gap){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+      for (var y=gap;y<h;y+=gap){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+    }
+  }
+})();
+</script>
+</body>
+</html>
