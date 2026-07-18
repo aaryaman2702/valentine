@@ -123,9 +123,8 @@
   .s4 .pr .t{color:var(--paper-soft)}
   .s4 .pr .v{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--paper);font-variant-numeric:tabular-nums;white-space:nowrap}
   .mock{
-    border-radius:16px;overflow:hidden;border:1px solid var(--line-str);background:var(--ink);
-    box-shadow:0 40px 90px -40px rgba(0,0,0,.8);clip-path:inset(0 0 100% 0);will-change:clip-path;
-    transform:translateZ(0);
+    position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line-str);background:var(--ink);
+    box-shadow:0 40px 90px -40px rgba(0,0,0,.8);clip-path:inset(0 0 100% 0);will-change:clip-path,transform;
   }
   .mock .bar{display:flex;gap:7px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--ink-2)}
   .mock .bar i{width:10px;height:10px;border-radius:50%;background:var(--line-str)}
@@ -206,6 +205,47 @@
   .foot .meta a{color:var(--paper-soft);text-decoration:none;border-bottom:1px solid var(--line-str)}
   .foot .meta a:hover{color:var(--gold);border-color:var(--gold)}
 
+  /* ---------- extra motion: pollen / card tilt / skew runs / marquee / magnetic cta ---------- */
+  .hero .pollen{position:absolute;inset:0;z-index:0;pointer-events:none}
+  .hero>*{position:relative;z-index:1}
+
+  .station,.svc{position:relative}
+  .station::after,.svc::after{
+    content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+    background:radial-gradient(240px circle at var(--mx,50%) var(--my,50%), rgba(233,180,76,.16), transparent 60%);
+    opacity:0;transition:opacity .35s ease;
+  }
+  .station:hover::after,.svc:hover::after{opacity:1}
+
+  .h-skew,.viz-skew{will-change:transform}
+
+  .mock .sweep{
+    position:absolute;inset:0;pointer-events:none;z-index:5;
+    background:linear-gradient(115deg, transparent 42%, rgba(255,255,255,.22) 50%, transparent 58%);
+  }
+
+  .viz-wrap{
+    margin-top:36px;overflow:hidden;position:relative;
+    mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
+  }
+  .viz-track{display:flex;gap:10px;width:max-content;animation:vizMarquee 26s linear infinite}
+  .viz-track span{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.04em;padding:8px 14px;border:1px solid var(--line-str);border-radius:999px;color:var(--paper-soft);white-space:nowrap}
+  @keyframes vizMarquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  .foot .cta{position:relative;display:inline-block}
+  .foot .cta::before{
+    content:"";position:absolute;left:50%;top:50%;width:150%;height:230%;
+    transform:translate(-50%,-50%) scale(.92);border-radius:50%;z-index:-1;pointer-events:none;
+    background:radial-gradient(circle, rgba(233,180,76,.18), transparent 65%);
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .foot .cta::before{animation:breathe 3.6s ease-in-out infinite}
+    .readout .rail i{box-shadow:0 0 8px rgba(233,180,76,.65);animation:railGlow 2.4s ease-in-out infinite}
+  }
+  @keyframes breathe{0%,100%{opacity:.5;transform:translate(-50%,-50%) scale(.92)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.07)}}
+  @keyframes railGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.7)}}
+
   /* ---------- responsive ---------- */
   @media (max-width:900px){
     body{font-size:16px}
@@ -222,7 +262,10 @@
   @media (prefers-reduced-motion: reduce){
     .hero .eyebrow,.hero .sub,.hero .roll,.s1 .subs p,.s2 .site,.s5 .sig,.rv{opacity:1 !important;transform:none !important}
     .hero .roll i{animation:none}
-    .mock{clip-path:none !important}
+    .mock{clip-path:none !important;transform:none !important}
+    .mock .sweep{display:none}
+    .hero .pollen{display:none}
+    .viz-track{animation:none}
     #thread{display:none}
   }
 </style>
@@ -241,6 +284,7 @@
 
 <!-- HERO -->
 <section class="hero" id="hero">
+  <canvas class="pollen" id="pollen" aria-hidden="true"></canvas>
   <p class="eyebrow">Aaryaman · The Studio Film</p>
   <h1 id="wordmark">Aaryaman<span class="dot">.</span></h1>
   <p class="sub">A premium web design &amp; development studio — pitched as one continuous shot. The gold thread you're about to follow builds a business.</p>
@@ -298,6 +342,7 @@
 <!-- SCENE 03 — THE CRAFT (horizontal) -->
 <section class="scene s3" id="scene3">
   <div class="h-wrap">
+    <div class="h-skew" id="trackSkew">
     <div class="h-track" id="track">
       <div class="h-title">
         <p class="kicker">Ch 03 — The Craft</p>
@@ -306,12 +351,12 @@
       </div>
       <div class="station">
         <span class="idx">TOOL 01</span><h3>ChatGPT Plus</h3><span class="role">Strategy &amp; Words</span>
-        <div class="cost">$20 <span>/ month</span></div>
+        <div class="cost">₹1,930 <span>/ month</span></div>
         <ul><li>Strategy &amp; planning</li><li>UX ideas</li><li>Copywriting</li><li>Debugging &amp; guidance</li></ul>
       </div>
       <div class="station">
         <span class="idx">TOOL 02</span><h3>Claude Max</h3><span class="role">The Build Engine</span>
-        <div class="cost">$234 <span>/ month</span></div>
+        <div class="cost">₹22,581 <span>/ month</span></div>
         <ul><li>Primary development</li><li>Components &amp; coding</li><li>Animations</li><li>Optimization &amp; iteration</li></ul>
       </div>
       <div class="station">
@@ -329,6 +374,7 @@
         <div class="cost">Soon</div>
         <ul><li>Version control</li><li>Professional client handovers</li></ul>
       </div>
+    </div>
     </div>
   </div>
 </section>
@@ -348,6 +394,7 @@
       </div>
     </div>
     <div class="mock" id="mock" aria-label="A finished website preview">
+      <div class="sweep" aria-hidden="true"></div>
       <div class="bar"><i></i><i></i><i></i></div>
       <div class="m-hero">
         <p class="m-tag">Est. 2026 · Premium</p>
@@ -438,9 +485,15 @@
       <h2>Where this goes.</h2>
       <p class="lead">A premium digital agency known for exceptional websites and digital experiences.</p>
     </div>
-    <div class="viz rv">
-      <span>E-commerce</span><span>Shopify development</span><span>AI integrations</span><span>Booking systems</span>
-      <span>Custom web apps</span><span>Brand strategy</span><span>Product videos</span><span>Marketing assets</span>
+    <div class="viz-wrap rv">
+      <div class="viz-skew" id="vizSkew">
+        <div class="viz-track">
+          <span>E-commerce</span><span>Shopify development</span><span>AI integrations</span><span>Booking systems</span>
+          <span>Custom web apps</span><span>Brand strategy</span><span>Product videos</span><span>Marketing assets</span>
+          <span aria-hidden="true">E-commerce</span><span aria-hidden="true">Shopify development</span><span aria-hidden="true">AI integrations</span><span aria-hidden="true">Booking systems</span>
+          <span aria-hidden="true">Custom web apps</span><span aria-hidden="true">Brand strategy</span><span aria-hidden="true">Product videos</span><span aria-hidden="true">Marketing assets</span>
+        </div>
+      </div>
     </div>
     <div class="plate rv">
       The software subscriptions are <b>not the business.</b> They are the instruments — used to build a real, sustainable one.
@@ -559,17 +612,20 @@ var P = { a:0, b:0, c:0, d:0, e:0 };
 var priceEls = { p1:document.getElementById('p1'), p2:document.getElementById('p2'),
                  p3:document.getElementById('p3'), p4:document.getElementById('p4'),
                  p5:document.getElementById('p5') };
+gsap.set('#mock', { transformPerspective: 1400, transformOrigin:'50% 30%', rotationX: 9, scale: .965, force3D:true });
+gsap.set('.mock .sweep', { xPercent:-140 });
 var tl4 = gsap.timeline({ scrollTrigger: {
   trigger: '#scene4', start: 'top top', end: '+=150%', pin: true, scrub: true
 }});
-tl4.to('#mock', { clipPath: 'inset(0% 0 0% 0)', ease:'power1.inOut', duration:.55 })
+tl4.to('#mock', { clipPath: 'inset(0% 0 0% 0)', rotationX:0, scale:1, ease:'power1.inOut', duration:.55 })
+   .to('.mock .sweep', { xPercent:140, ease:'power2.inOut', duration:.35 }, '-=.2')
    .to(P, { a:1, b:1, c:1, d:1, e:1, duration:.4, ease:'none', onUpdate: function(){
         priceEls.p1.textContent = fmtINR(15000*P.a)  + ' – ' + fmtINR(30000*P.a);
         priceEls.p2.textContent = fmtINR(35000*P.b)  + ' – ' + fmtINR(80000*P.b);
         priceEls.p3.textContent = fmtINR(80000*P.c)  + ' – ' + fmtINR(200000*P.c) + '+';
         priceEls.p4.textContent = fmtINR(20000*P.d)  + ' – ' + fmtINR(50000*P.d);
         priceEls.p5.textContent = fmtINR(30000*P.e)  + ' – ' + fmtINR(100000*P.e);
-     }}, '-=.3')
+     }}, '-=.25')
    .to({}, { duration:.15 });
 
 /* SCENE 05 — ROI counter + signature flourish */
@@ -583,6 +639,11 @@ var tl5 = gsap.timeline({ scrollTrigger: {
 }});
 tl5.to(R, { v: 100000, duration:.45, ease:'none', onUpdate: function(){
       roiEl.textContent = fmtINR(R.v);
+   }, onComplete: function(){
+      if (!REDUCE){
+        var r = roiEl.getBoundingClientRect();
+        spawnEmbers(r.left + r.width/2, r.top + r.height/2);
+      }
    }})
    .to('#sig', { opacity:1, y:0, duration:.2 }, '-=.1')
    .to(flourish, { strokeDashoffset: 0, ease:'power1.inOut', duration:.3 })
@@ -635,7 +696,7 @@ function updateReadout(){
 var cv = document.getElementById('thread'), ctx = cv.getContext('2d');
 var DPR = Math.min(devicePixelRatio || 1, 1.5);
 function sizeCv(){ cv.width = innerWidth*DPR; cv.height = innerHeight*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
-sizeCv(); addEventListener('resize', sizeCv);
+sizeCv();
 var N = 140;
 function phasePoint(phase, i, t, time, W, H){
   var u = i/(N-1);
@@ -702,16 +763,139 @@ function drawThread(){
   ctx.globalAlpha = 1;
 }
 
+/* ---------- ember burst — spawned when the ROI counter lands (Ch 05) ---------- */
+var embers = [];
+function spawnEmbers(x, y){
+  for (var i=0;i<30;i++){
+    var ang = -Math.PI/2 + (Math.random()-.5)*1.7;
+    var spd = 55 + Math.random()*150;
+    embers.push({ x:x, y:y, vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd,
+                   life:0, maxLife:.7+Math.random()*.6, size:2+Math.random()*3.6 });
+  }
+}
+function drawEmbers(dt){
+  if (!embers.length) return;
+  for (var i=embers.length-1;i>=0;i--){
+    var e = embers[i];
+    e.life += dt;
+    if (e.life >= e.maxLife){ embers.splice(i,1); continue; }
+    e.x += e.vx*dt; e.y += e.vy*dt; e.vy += 90*dt;
+    var a = 1 - e.life/e.maxLife;
+    ctx.globalAlpha = a;
+    ctx.fillStyle = '#F5D78A';
+    ctx.beginPath(); ctx.arc(e.x, e.y, Math.max(0,e.size*a), 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ---------- ambient hero pollen — gold dust over the opening frame, fades by 7% scroll ---------- */
+var pollenCv = document.getElementById('pollen'), pctx = pollenCv ? pollenCv.getContext('2d') : null;
+var pollenSprite = null, pollenParticles = [];
+function sizePollen(){
+  if (!pollenCv) return;
+  var w = pollenCv.clientWidth, h = pollenCv.clientHeight;
+  pollenCv.width = w*DPR; pollenCv.height = h*DPR;
+  pctx.setTransform(DPR,0,0,DPR,0,0);
+}
+function buildPollenSprite(){
+  var s = document.createElement('canvas'); s.width = 32; s.height = 32;
+  var sc = s.getContext('2d');
+  var rg = sc.createRadialGradient(16,16,0,16,16,16);
+  rg.addColorStop(0,'rgba(245,215,138,1)'); rg.addColorStop(.4,'rgba(233,180,76,.55)'); rg.addColorStop(1,'rgba(233,180,76,0)');
+  sc.fillStyle = rg; sc.beginPath(); sc.arc(16,16,16,0,7); sc.fill();
+  return s;
+}
+function initPollen(){
+  if (!pollenCv) return;
+  pollenSprite = buildPollenSprite();
+  var W = pollenCv.clientWidth, H = pollenCv.clientHeight;
+  pollenParticles = [];
+  for (var i=0;i<44;i++){
+    pollenParticles.push({ x:Math.random()*W, y:Math.random()*H,
+      size:6+Math.random()*13, speed:6+Math.random()*13,
+      alpha:.22+Math.random()*.45, phase:Math.random()*Math.PI*2, drift:(Math.random()-.5)*12 });
+  }
+}
+function drawPollen(){
+  if (!pollenCv || !pollenSprite) return;
+  var W = pollenCv.clientWidth, H = pollenCv.clientHeight;
+  var p = globalP(), fadeP = Math.max(0, 1 - p/0.07);
+  pctx.clearRect(0,0,W,H);
+  if (fadeP <= 0 || p > 0.09) return;
+  var t = performance.now()/1000;
+  for (var i=0;i<pollenParticles.length;i++){
+    var pt = pollenParticles[i];
+    pt.y -= pt.speed/60; if (pt.y < -20){ pt.y = H+20; pt.x = Math.random()*W; }
+    var twinkle = 0.6 + 0.4*Math.sin(t*1.6 + pt.phase);
+    var x = pt.x + Math.sin(t*0.5+pt.phase)*pt.drift;
+    var s = pt.size;
+    pctx.globalAlpha = pt.alpha * twinkle * fadeP;
+    pctx.drawImage(pollenSprite, x-s/2, pt.y-s/2, s, s);
+  }
+  pctx.globalAlpha = 1;
+}
+sizePollen(); initPollen();
+addEventListener('resize', function(){ sizeCv(); sizePollen(); initPollen(); });
+
+/* ---------- velocity-skew — The Craft run + the Vision marquee lean into scroll speed ---------- */
+var trackSkewEl = document.getElementById('trackSkew'), vizSkewEl = document.getElementById('vizSkew');
+var skewSmoothed = 0, lastSkewY = window.scrollY, lastSkewT = performance.now();
+function updateSkew(){
+  var now = performance.now(), y = window.scrollY;
+  var dt = Math.max(1, now - lastSkewT);
+  var vel = (y - lastSkewY) / dt * 1000; // px/sec
+  lastSkewY = y; lastSkewT = now;
+  var target = gsap.utils.clamp(-9, 9, vel/450);
+  skewSmoothed += (target - skewSmoothed) * 0.15;
+  if (trackSkewEl) trackSkewEl.style.transform = 'skewY(' + skewSmoothed.toFixed(2) + 'deg)';
+  if (vizSkewEl) vizSkewEl.style.transform = 'skewX(' + (-skewSmoothed*0.6).toFixed(2) + 'deg)';
+}
+
+/* ---------- cursor-reactive tilt — tool stations + service cards ---------- */
+if (!REDUCE){
+  gsap.utils.toArray('.station, .svc').forEach(function(card){
+    card.addEventListener('mousemove', function(e){
+      var r = card.getBoundingClientRect();
+      var px = (e.clientX - r.left)/r.width, py = (e.clientY - r.top)/r.height;
+      var rx = (py-0.5) * -7, ry = (px-0.5) * 9;
+      card.style.transform = 'perspective(700px) rotateX('+rx.toFixed(2)+'deg) rotateY('+ry.toFixed(2)+'deg) translateZ(2px)';
+      card.style.setProperty('--mx', (px*100).toFixed(1)+'%');
+      card.style.setProperty('--my', (py*100).toFixed(1)+'%');
+    });
+    card.addEventListener('mouseleave', function(){
+      card.style.transform = 'perspective(700px) rotateX(0deg) rotateY(0deg) translateZ(0)';
+    });
+  });
+
+  /* ---------- magnetic footer CTA ---------- */
+  var ctaEl = document.querySelector('.foot .cta');
+  if (ctaEl && typeof gsap.quickTo === 'function'){
+    var qx = gsap.quickTo(ctaEl, 'x', { duration:.5, ease:'power3' });
+    var qy = gsap.quickTo(ctaEl, 'y', { duration:.5, ease:'power3' });
+    ctaEl.addEventListener('mousemove', function(e){
+      var r = ctaEl.getBoundingClientRect();
+      var dx = e.clientX - (r.left + r.width/2), dy = e.clientY - (r.top + r.height/2);
+      qx(dx*0.16); qy(dy*0.22);
+    });
+    ctaEl.addEventListener('mouseleave', function(){ qx(0); qy(0); });
+  }
+}
+
 /* ---------- jank meter (console) ---------- */
 var deltas = [], lastT = performance.now(), lastLog = lastT;
 function tick(){
-  var now = performance.now(); deltas.push(now-lastT); lastT = now;
+  var now = performance.now(); var frameDt = now-lastT; deltas.push(frameDt); lastT = now;
   if (now - lastLog > 2000){
     var mx = Math.max.apply(null, deltas);
     console.log('[jank] max frame ' + mx.toFixed(1) + 'ms over ' + deltas.length + ' frames');
     deltas = []; lastLog = now;
   }
-  if (!REDUCE) drawThread();
+  if (!REDUCE){
+    drawThread();
+    drawEmbers(Math.min(0.05, frameDt/1000));
+    drawPollen();
+    updateSkew();
+  }
   updateReadout();
   requestAnimationFrame(tick);
 }
