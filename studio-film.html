@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aaryaman — The Studio Film</title>
+<meta name="description" content="A premium web studio, pitched as one continuous shot. Scroll to roll film." />
+<style>
+  /* ---------- vendored fonts (fully self-contained) ---------- */
+  @font-face{font-family:'Fraunces';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/fraunces-latin-400-normal.woff2') format('woff2')}
+  @font-face{font-family:'Fraunces';font-style:italic;font-weight:400;font-display:swap;src:url('fonts/fraunces-latin-400-italic.woff2') format('woff2')}
+  @font-face{font-family:'Fraunces';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/fraunces-latin-600-normal.woff2') format('woff2')}
+  @font-face{font-family:'Archivo';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/archivo-latin-400-normal.woff2') format('woff2')}
+  @font-face{font-family:'Archivo';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/archivo-latin-500-normal.woff2') format('woff2')}
+  @font-face{font-family:'Archivo';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/archivo-latin-600-normal.woff2') format('woff2')}
+  @font-face{font-family:'Archivo';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/archivo-latin-700-normal.woff2') format('woff2')}
+  @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/jetbrains-mono-latin-400-normal.woff2') format('woff2')}
+  @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/jetbrains-mono-latin-500-normal.woff2') format('woff2')}
+  @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/jetbrains-mono-latin-600-normal.woff2') format('woff2')}
+
+  :root{
+    --abyss:#07090E; --ink:#0D111C; --ink-2:#131826;
+    --paper:#EDE7DA; --paper-soft:#C9C4B8; --slate:#6E7686;
+    --gold:#E9B44C; --gold-hi:#F5D78A; --gold-dk:#B98A2C;
+    --line:rgba(237,231,218,.10); --line-str:rgba(237,231,218,.2);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:auto}
+  body{
+    margin:0; background:var(--abyss); color:var(--paper);
+    font-family:'Archivo',system-ui,sans-serif; font-size:17px; line-height:1.6;
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  ::selection{background:var(--gold);color:var(--abyss)}
+  h1,h2,h3{font-family:'Fraunces',Georgia,serif;font-weight:400;margin:0;text-wrap:balance}
+  p{margin:0}
+  .mono{font-family:'JetBrains Mono',monospace}
+
+  /* ---------- fixed chrome ---------- */
+  #thread{position:fixed;inset:0;z-index:1;pointer-events:none}
+  .chrome{
+    position:fixed;inset:0 0 auto 0;z-index:50;display:flex;align-items:center;
+    justify-content:space-between;padding:18px 30px;pointer-events:none;
+  }
+  .chrome .mark{font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:var(--paper)}
+  .chrome .mark b{color:var(--gold);font-weight:600}
+  .readout{display:flex;flex-direction:column;align-items:flex-end;gap:7px}
+  .readout .ch{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--slate)}
+  .readout .ch b{color:var(--gold);font-weight:500}
+  .readout .rail{width:130px;height:2px;background:var(--line);border-radius:2px;overflow:hidden}
+  .readout .rail i{display:block;height:100%;width:0;background:var(--gold)}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:0 24px}
+  .hero .eyebrow{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:26px;opacity:0}
+  .hero h1{font-size:clamp(3.4rem,11vw,9.5rem);line-height:.95;letter-spacing:-.03em}
+  .hero h1 .c{display:inline-block;will-change:transform}
+  .hero h1 .dot{color:var(--gold)}
+  .hero .sub{color:var(--paper-soft);font-size:clamp(1rem,2vw,1.3rem);max-width:46ch;margin-top:30px;opacity:0}
+  .hero .roll{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--slate);opacity:0;display:flex;flex-direction:column;align-items:center;gap:10px}
+  .hero .roll i{width:1px;height:36px;background:linear-gradient(var(--gold),transparent);display:block;animation:drop 2s ease-in-out infinite}
+  @keyframes drop{0%,100%{transform:scaleY(.35);transform-origin:top;opacity:.5}50%{transform:scaleY(1);opacity:1}}
+
+  /* ---------- film scenes ---------- */
+  .scene{position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .stage{width:min(1160px,92vw);position:relative}
+  .kicker{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:12px;margin-bottom:30px}
+  .kicker::before{content:"";width:30px;height:1px;background:var(--gold);opacity:.7}
+
+  /* scene 01 — the canvas */
+  .s1 .statement{font-family:'Fraunces',serif;font-size:clamp(2.4rem,6.6vw,5.6rem);line-height:1.02;letter-spacing:-.02em;max-width:16ch}
+  .s1 .statement .w{display:inline-block;white-space:nowrap}
+  .s1 .statement .c{display:inline-block;will-change:transform,opacity}
+  .s1 .statement .hl{color:var(--gold);font-style:italic}
+  .s1 .subs{display:flex;gap:44px;margin-top:44px;flex-wrap:wrap}
+  .s1 .subs p{color:var(--paper-soft);max-width:30ch;font-size:1.05rem;opacity:0;transform:translateY(20px)}
+  .s1 .subs p b{color:var(--paper)}
+
+  /* scene 02 — the blueprint */
+  .s2 .stage{display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:center}
+  .s2 svg{width:100%;height:auto;display:block;overflow:visible;transform:translateZ(0)}
+  .s2 svg *{vector-effect:non-scaling-stroke}
+  .s2 .draw{stroke:var(--gold);stroke-width:1.4;fill:none;stroke-linecap:round}
+  .s2 .draw.dim{stroke:rgba(237,231,218,.35)}
+  .s2 h2{font-size:clamp(2rem,4.4vw,3.6rem);line-height:1.05;letter-spacing:-.015em}
+  .s2 .bp-stats{display:flex;gap:36px;margin-top:38px}
+  .s2 .bp-stat .n{font-family:'JetBrains Mono',monospace;font-size:clamp(1.9rem,3.6vw,2.8rem);font-weight:600;color:var(--gold);font-variant-numeric:tabular-nums}
+  .s2 .bp-stat .l{color:var(--slate);font-size:.88rem;margin-top:6px;max-width:14ch}
+  .s2 .sites{display:flex;flex-wrap:wrap;gap:9px;margin-top:34px}
+  .s2 .site{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.04em;padding:6px 12px;border:1px solid var(--line-str);border-radius:999px;color:var(--paper-soft);opacity:0;transform:translateY(14px)}
+
+  /* scene 03 — the craft (horizontal) */
+  .s3{display:block}
+  .s3 .h-wrap{height:100vh;display:flex;align-items:center;overflow:hidden}
+  .s3 .h-track{display:flex;align-items:center;gap:46px;width:max-content;padding:0 max(6vw,40px);will-change:transform}
+  .s3 .h-title{flex:0 0 auto;width:min(560px,78vw)}
+  .s3 .h-title h2{font-size:clamp(2.4rem,5.5vw,4.6rem);line-height:1.02;letter-spacing:-.02em}
+  .s3 .h-title h2 em{color:var(--gold)}
+  .s3 .h-title p{color:var(--paper-soft);margin-top:20px;max-width:38ch}
+  .station{
+    flex:0 0 auto;width:min(400px,80vw);background:var(--ink);border:1px solid var(--line);
+    border-radius:18px;padding:34px;position:relative;overflow:hidden;
+    transform:translateZ(0); /* pre-raster: avoids a paint spike when the run first enters */
+  }
+  .station::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:linear-gradient(var(--gold),transparent)}
+  .station .idx{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;color:var(--slate)}
+  .station h3{font-size:1.9rem;margin-top:14px}
+  .station .role{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-top:8px}
+  .station .cost{font-family:'JetBrains Mono',monospace;color:var(--paper);font-size:1.15rem;margin-top:20px;font-variant-numeric:tabular-nums}
+  .station .cost span{color:var(--slate);font-size:.8rem}
+  .station ul{margin:20px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+  .station li{color:var(--paper-soft);font-size:.95rem;display:flex;gap:10px;align-items:baseline}
+  .station li::before{content:"—";color:var(--gold)}
+  .station.ghost{background:transparent;border-style:dashed}
+  .station.ghost::before{display:none}
+
+  /* scene 04 — the reveal */
+  .s4 .stage{display:grid;grid-template-columns:1fr .82fr;gap:54px;align-items:center}
+  .s4 h2{font-size:clamp(2.2rem,4.8vw,4rem);line-height:1.04;letter-spacing:-.018em}
+  .s4 h2 em{color:var(--gold)}
+  .s4 .prices{margin-top:40px;display:flex;flex-direction:column;gap:0;border-top:1px solid var(--line)}
+  .s4 .pr{display:flex;justify-content:space-between;align-items:baseline;gap:20px;padding:15px 2px;border-bottom:1px solid var(--line)}
+  .s4 .pr .t{color:var(--paper-soft)}
+  .s4 .pr .v{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--paper);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .mock{
+    border-radius:16px;overflow:hidden;border:1px solid var(--line-str);background:var(--ink);
+    box-shadow:0 40px 90px -40px rgba(0,0,0,.8);clip-path:inset(0 0 100% 0);will-change:clip-path;
+    transform:translateZ(0);
+  }
+  .mock .bar{display:flex;gap:7px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--ink-2)}
+  .mock .bar i{width:10px;height:10px;border-radius:50%;background:var(--line-str)}
+  .mock .bar i:first-child{background:var(--gold)}
+  .mock .m-hero{padding:44px 36px 40px;background:
+    radial-gradient(120% 150% at 85% -20%, rgba(233,180,76,.22), transparent 55%), var(--ink)}
+  .mock .m-tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+  .mock .m-h{font-family:'Fraunces',serif;font-size:1.9rem;line-height:1.1;margin-top:12px}
+  .mock .m-p{color:var(--slate);font-size:.85rem;margin-top:10px;max-width:34ch}
+  .mock .m-btn{display:inline-block;margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--abyss);background:var(--gold);padding:9px 16px;border-radius:999px}
+  .mock .m-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:16px}
+  .mock .m-card{background:var(--ink-2);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .mock .m-card i{display:block;height:5px;width:60%;border-radius:3px;background:var(--gold);opacity:.8}
+  .mock .m-card em{display:block;height:4px;width:90%;border-radius:3px;background:var(--line-str);margin-top:9px}
+  .mock .m-card em+em{width:70%}
+
+  /* scene 05 — liftoff */
+  .s5{text-align:center}
+  .s5 .stage{display:flex;flex-direction:column;align-items:center}
+  .s5 h2{font-size:clamp(2.4rem,6vw,5.2rem);line-height:1.03;letter-spacing:-.02em;max-width:18ch}
+  .s5 h2 em{color:var(--gold)}
+  .s5 .roi{font-family:'JetBrains Mono',monospace;font-size:clamp(2.2rem,6vw,4.4rem);color:var(--gold);font-weight:600;margin-top:34px;font-variant-numeric:tabular-nums}
+  .s5 .roi-l{color:var(--slate);font-size:.95rem;margin-top:10px;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase}
+  .s5 .sig{margin-top:52px;opacity:0;transform:translateY(16px)}
+  .s5 .sig .wm{font-family:'Fraunces',serif;font-size:clamp(2rem,4.4vw,3.2rem);font-weight:600}
+  .s5 .sig .wm b{color:var(--gold)}
+  .s5 .sig svg{display:block;margin:6px auto 0;width:min(300px,70vw);overflow:visible}
+  .s5 .sig .fl{stroke:var(--gold);stroke-width:2;fill:none;stroke-linecap:round}
+  .s5 .sig .tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--slate);margin-top:16px}
+
+  /* ---------- after-film ---------- */
+  .after{position:relative;z-index:2;background:linear-gradient(var(--abyss), var(--ink) 30%)}
+  .blk{max-width:1160px;margin:0 auto;padding:110px 32px;border-top:1px solid var(--line)}
+  .blk:first-child{border-top:none}
+  .blk h2{font-size:clamp(1.9rem,4vw,3rem);letter-spacing:-.015em;line-height:1.06}
+  .blk .lead{color:var(--paper-soft);max-width:58ch;margin-top:16px;font-size:1.08rem}
+  .rv{opacity:0;transform:translateY(26px)}
+
+  .svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-top:44px}
+  .svc{padding:28px 26px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);transition:background .3s}
+  .svc:hover{background:var(--ink-2)}
+  .svc .i{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold)}
+  .svc h3{font-size:1.25rem;margin-top:12px}
+  .svc p{color:var(--paper-soft);font-size:.93rem;margin-top:8px}
+
+  .p-table{border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-top:44px}
+  .p-row{display:grid;grid-template-columns:1.3fr auto;align-items:baseline;gap:20px;padding:22px 28px;border-top:1px solid var(--line);transition:background .3s}
+  .p-row:first-child{border-top:none}
+  .p-row:hover{background:var(--ink-2)}
+  .p-row .s{font-family:'Fraunces',serif;font-size:1.3rem}
+  .p-row .d{color:var(--slate);font-size:.85rem;margin-top:3px}
+  .p-row .a{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:1.08rem;color:var(--paper);font-variant-numeric:tabular-nums;text-align:right}
+  .p-note{color:var(--slate);font-size:.95rem;margin-top:18px}
+  .p-note b{color:var(--gold);font-weight:500}
+
+  .proc{display:flex;gap:0;margin-top:44px;overflow-x:auto;padding-bottom:14px;scrollbar-width:thin}
+  .pstep{flex:0 0 auto;width:200px;padding:0 22px 0 0;position:relative}
+  .pstep .pn{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold);font-weight:600}
+  .pstep .pt{font-size:1.02rem;margin-top:10px;color:var(--paper)}
+  .pstep::before{content:"";position:absolute;top:8px;left:calc(100% - 14px);width:100%;height:1px;background:var(--line-str)}
+  .pstep:last-child::before{display:none}
+
+  .viz{display:flex;flex-wrap:wrap;gap:10px;margin-top:36px}
+  .viz span{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.04em;padding:8px 14px;border:1px solid var(--line-str);border-radius:999px;color:var(--paper-soft)}
+
+  .plate{
+    margin-top:44px;padding:40px 44px;border:1px solid var(--line-str);border-radius:20px;
+    font-family:'Fraunces',serif;font-style:italic;font-size:clamp(1.3rem,2.8vw,1.8rem);line-height:1.4;
+    background:radial-gradient(140% 200% at 10% -40%, rgba(233,180,76,.1), transparent 60%), var(--ink);
+  }
+  .plate b{font-style:normal;color:var(--gold)}
+
+  footer{position:relative;z-index:2;background:var(--ink);padding:100px 32px 90px;border-top:1px solid var(--line)}
+  .foot{max-width:1160px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:30px}
+  .foot .cta{font-family:'Fraunces',serif;font-size:clamp(2.6rem,7vw,5rem);line-height:.98;letter-spacing:-.02em}
+  .foot .cta b{color:var(--gold);font-weight:400}
+  .foot .meta{text-align:right;color:var(--slate);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.08em;line-height:2}
+  .foot .meta a{color:var(--paper-soft);text-decoration:none;border-bottom:1px solid var(--line-str)}
+  .foot .meta a:hover{color:var(--gold);border-color:var(--gold)}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:900px){
+    body{font-size:16px}
+    .s2 .stage{grid-template-columns:1fr;gap:34px}
+    .s4 .stage{grid-template-columns:1fr;gap:34px}
+    .svc-grid{grid-template-columns:1fr}
+    .svc{border-right:none}
+    .blk{padding:80px 22px}
+    .chrome{padding:14px 20px}
+    .readout .rail{width:80px}
+  }
+
+  /* ---------- reduced motion ---------- */
+  @media (prefers-reduced-motion: reduce){
+    .hero .eyebrow,.hero .sub,.hero .roll,.s1 .subs p,.s2 .site,.s5 .sig,.rv{opacity:1 !important;transform:none !important}
+    .hero .roll i{animation:none}
+    .mock{clip-path:none !important}
+    #thread{display:none}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="thread" aria-hidden="true"></canvas>
+
+<header class="chrome">
+  <span class="mark">Aaryaman<b>.</b></span>
+  <div class="readout">
+    <span class="ch"><b id="chNum">CH 00</b> · <span id="chName">TITLES</span></span>
+    <span class="rail"><i id="chBar"></i></span>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <p class="eyebrow">Aaryaman · The Studio Film</p>
+  <h1 id="wordmark">Aaryaman<span class="dot">.</span></h1>
+  <p class="sub">A premium web design &amp; development studio — pitched as one continuous shot. The gold thread you're about to follow builds a business.</p>
+  <div class="roll"><span>Roll film</span><i></i></div>
+</section>
+
+<!-- SCENE 01 — THE CANVAS -->
+<section class="scene s1" id="scene1">
+  <div class="stage">
+    <p class="kicker">Ch 01 — The Canvas</p>
+    <h2 class="statement" id="statement">Nobody hires a designer <span class="hl">they can't see.</span></h2>
+    <div class="subs">
+      <p>Every business needs a website that earns trust in seconds — it's the first impression, the storefront, and the salesperson at once.</p>
+      <p>But clients only trust work they can <b>click</b>. A strong portfolio isn't a nice-to-have — it's the entry ticket.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 02 — THE BLUEPRINT -->
+<section class="scene s2" id="scene2">
+  <div class="stage">
+    <div>
+      <svg viewBox="0 0 800 520" aria-label="A website wireframe drawing itself">
+        <rect class="draw" x="10" y="10" width="780" height="500" rx="14"/>
+        <line class="draw dim" x1="10" y1="58" x2="790" y2="58"/>
+        <circle class="draw dim" cx="40" cy="34" r="6"/><circle class="draw dim" cx="64" cy="34" r="6"/><circle class="draw dim" cx="88" cy="34" r="6"/>
+        <line class="draw dim" x1="560" y1="34" x2="620" y2="34"/><line class="draw dim" x1="640" y1="34" x2="700" y2="34"/><line class="draw dim" x1="720" y1="34" x2="760" y2="34"/>
+        <rect class="draw" x="60" y="110" width="420" height="34" rx="4"/>
+        <rect class="draw dim" x="60" y="160" width="330" height="16" rx="4"/>
+        <rect class="draw" x="60" y="205" width="120" height="34" rx="17"/>
+        <rect class="draw" x="540" y="100" width="200" height="150" rx="10"/>
+        <line class="draw dim" x1="540" y1="250" x2="740" y2="100"/>
+        <rect class="draw dim" x="60" y="300" width="200" height="150" rx="10"/>
+        <rect class="draw dim" x="300" y="300" width="200" height="150" rx="10"/>
+        <rect class="draw dim" x="540" y="300" width="200" height="150" rx="10"/>
+        <line class="draw" x1="60" y1="480" x2="740" y2="480"/>
+      </svg>
+    </div>
+    <div>
+      <p class="kicker">Ch 02 — The Blueprint</p>
+      <h2>So the proof gets drawn first.</h2>
+      <div class="bp-stats">
+        <div class="bp-stat"><div class="n" id="ctSites">00</div><div class="l">premium builds, live online</div></div>
+        <div class="bp-stat"><div class="n" id="ctInd">00</div><div class="l">industries &amp; design styles</div></div>
+        <div class="bp-stat"><div class="n" id="ctLive">00%</div><div class="l">published — real, clickable proof</div></div>
+      </div>
+      <div class="sites">
+        <span class="site">My Portfolio</span><span class="site">Break of Dawn</span><span class="site">Redefine Byrd</span>
+        <span class="site">Healthcare</span><span class="site">Luxury Landing</span><span class="site">+ Concepts</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 03 — THE CRAFT (horizontal) -->
+<section class="scene s3" id="scene3">
+  <div class="h-wrap">
+    <div class="h-track" id="track">
+      <div class="h-title">
+        <p class="kicker">Ch 03 — The Craft</p>
+        <h2>Four instruments.<br><em>One studio.</em></h2>
+        <p>Not a pile of subscriptions — a production line. Each tool has one job, the way a photographer's kit does.</p>
+      </div>
+      <div class="station">
+        <span class="idx">TOOL 01</span><h3>ChatGPT Plus</h3><span class="role">Strategy &amp; Words</span>
+        <div class="cost">$20 <span>/ month</span></div>
+        <ul><li>Strategy &amp; planning</li><li>UX ideas</li><li>Copywriting</li><li>Debugging &amp; guidance</li></ul>
+      </div>
+      <div class="station">
+        <span class="idx">TOOL 02</span><h3>Claude Max</h3><span class="role">The Build Engine</span>
+        <div class="cost">$234 <span>/ month</span></div>
+        <ul><li>Primary development</li><li>Components &amp; coding</li><li>Animations</li><li>Optimization &amp; iteration</li></ul>
+      </div>
+      <div class="station">
+        <span class="idx">TOOL 03</span><h3>Higgsfield Pro</h3><span class="role">Motion &amp; Film</span>
+        <div class="cost">₹27,000 <span>/ year</span></div>
+        <ul><li>Hero videos</li><li>Motion graphics</li><li>Product animations</li><li>Premium visual assets</li></ul>
+      </div>
+      <div class="station">
+        <span class="idx">TOOL 04</span><h3>Vercel</h3><span class="role">Ship It Live</span>
+        <div class="cost">Deploy <span>layer</span></div>
+        <ul><li>Deploy websites</li><li>Publicly accessible</li><li>Host projects online</li></ul>
+      </div>
+      <div class="station ghost">
+        <span class="idx">NEXT</span><h3>GitHub</h3><span class="role">Version Control</span>
+        <div class="cost">Soon</div>
+        <ul><li>Version control</li><li>Professional client handovers</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 04 — THE REVEAL -->
+<section class="scene s4" id="scene4">
+  <div class="stage">
+    <div>
+      <p class="kicker">Ch 04 — The Reveal</p>
+      <h2>Ink in. <em>Lights on.</em></h2>
+      <div class="prices">
+        <div class="pr"><span class="t">Landing pages</span><span class="v" id="p1">₹0 – ₹0</span></div>
+        <div class="pr"><span class="t">Business websites</span><span class="v" id="p2">₹0 – ₹0</span></div>
+        <div class="pr"><span class="t">Premium brand websites</span><span class="v" id="p3">₹0 – ₹0+</span></div>
+        <div class="pr"><span class="t">Portfolio websites</span><span class="v" id="p4">₹0 – ₹0</span></div>
+        <div class="pr"><span class="t">Website redesigns</span><span class="v" id="p5">₹0 – ₹0</span></div>
+      </div>
+    </div>
+    <div class="mock" id="mock" aria-label="A finished website preview">
+      <div class="bar"><i></i><i></i><i></i></div>
+      <div class="m-hero">
+        <p class="m-tag">Est. 2026 · Premium</p>
+        <p class="m-h">A brand that looks<br>the way it deserves to.</p>
+        <p class="m-p">Designed, built, animated and shipped — fast, modern, and unmistakably premium.</p>
+        <span class="m-btn">SEE THE WORK →</span>
+      </div>
+      <div class="m-cards">
+        <div class="m-card"><i></i><em></em><em></em></div>
+        <div class="m-card"><i></i><em></em><em></em></div>
+        <div class="m-card"><i></i><em></em><em></em></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 05 — LIFTOFF -->
+<section class="scene s5" id="scene5">
+  <div class="stage">
+    <p class="kicker" style="justify-content:center">Ch 05 — Liftoff</p>
+    <h2>One project pays for the tools. The portfolio <em>pays forever.</em></h2>
+    <div class="roi" id="roi">₹0</div>
+    <p class="roi-l">earned by a single premium project</p>
+    <div class="sig" id="sig">
+      <p class="wm">Aaryaman<b>.</b></p>
+      <svg viewBox="0 0 300 40"><path class="fl" id="flourish" d="M6,28 C60,8 120,40 160,22 C200,4 250,30 294,14"/></svg>
+      <p class="tag">Crafted, not generated</p>
+    </div>
+  </div>
+</section>
+
+<!-- AFTER-FILM -->
+<main class="after">
+  <div class="blk">
+    <div class="rv">
+      <p class="kicker">The Offer</p>
+      <h2>What clients can hire.</h2>
+    </div>
+    <div class="svc-grid rv">
+      <div class="svc"><span class="i">01</span><h3>Landing Pages</h3><p>Single-purpose pages built to convert — launches, campaigns, product drops.</p></div>
+      <div class="svc"><span class="i">02</span><h3>Business Websites</h3><p>Complete multi-page sites that give a business a credible, modern home.</p></div>
+      <div class="svc"><span class="i">03</span><h3>Premium Brand Websites</h3><p>Design-led experiences with custom motion and a distinctive identity.</p></div>
+      <div class="svc"><span class="i">04</span><h3>Portfolio Websites</h3><p>Personal and creative sites that make individuals look their best.</p></div>
+      <div class="svc"><span class="i">05</span><h3>Website Redesigns</h3><p>Dated, underperforming sites turned fast, modern and high-converting.</p></div>
+      <div class="svc"><span class="i">06</span><h3>Brand &amp; Marketing Assets</h3><p>Hero films, motion graphics and visuals that make the whole brand feel premium.</p></div>
+    </div>
+  </div>
+
+  <div class="blk">
+    <div class="rv">
+      <p class="kicker">The Numbers</p>
+      <h2>Pricing that grows with reputation.</h2>
+    </div>
+    <div class="p-table rv">
+      <div class="p-row"><div><div class="s">Landing Pages</div><div class="d">Single-page, conversion-focused</div></div><div class="a">₹15,000 – ₹30,000</div></div>
+      <div class="p-row"><div><div class="s">Business Websites</div><div class="d">Full multi-page presence</div></div><div class="a">₹35,000 – ₹80,000</div></div>
+      <div class="p-row"><div><div class="s">Premium Websites</div><div class="d">Design-led, custom motion</div></div><div class="a">₹80,000 – ₹2,00,000+</div></div>
+      <div class="p-row"><div><div class="s">Portfolio Websites</div><div class="d">Personal &amp; creative</div></div><div class="a">₹20,000 – ₹50,000</div></div>
+      <div class="p-row"><div><div class="s">Website Redesigns</div><div class="d">Modernising existing sites</div></div><div class="a">₹30,000 – ₹1,00,000</div></div>
+    </div>
+    <p class="p-note rv"><b>Entry prices.</b> A single ₹60,000–₹1,00,000 project recovers most or all of the software investment — and every finished site makes the next client easier to win.</p>
+  </div>
+
+  <div class="blk">
+    <div class="rv">
+      <p class="kicker">The Process</p>
+      <h2>How a client project runs.</h2>
+      <p class="lead">The same way a real agency operates — from first contact to final handover.</p>
+    </div>
+    <div class="proc rv">
+      <div class="pstep"><div class="pn">01</div><div class="pt">Lead generation</div></div>
+      <div class="pstep"><div class="pn">02</div><div class="pt">Discovery call</div></div>
+      <div class="pstep"><div class="pn">03</div><div class="pt">Business goals</div></div>
+      <div class="pstep"><div class="pn">04</div><div class="pt">Research</div></div>
+      <div class="pstep"><div class="pn">05</div><div class="pt">Design</div></div>
+      <div class="pstep"><div class="pn">06</div><div class="pt">Development</div></div>
+      <div class="pstep"><div class="pn">07</div><div class="pt">Testing</div></div>
+      <div class="pstep"><div class="pn">08</div><div class="pt">Deployment</div></div>
+      <div class="pstep"><div class="pn">09</div><div class="pt">Client review</div></div>
+      <div class="pstep"><div class="pn">10</div><div class="pt">Final delivery</div></div>
+      <div class="pstep"><div class="pn">11</div><div class="pt">Handover</div></div>
+    </div>
+  </div>
+
+  <div class="blk">
+    <div class="rv">
+      <p class="kicker">The Horizon</p>
+      <h2>Where this goes.</h2>
+      <p class="lead">A premium digital agency known for exceptional websites and digital experiences.</p>
+    </div>
+    <div class="viz rv">
+      <span>E-commerce</span><span>Shopify development</span><span>AI integrations</span><span>Booking systems</span>
+      <span>Custom web apps</span><span>Brand strategy</span><span>Product videos</span><span>Marketing assets</span>
+    </div>
+    <div class="plate rv">
+      The software subscriptions are <b>not the business.</b> They are the instruments — used to build a real, sustainable one.
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="foot">
+    <div class="cta rv">Let's build it<b>.</b></div>
+    <div class="meta rv">
+      Aaryaman — Design &amp; Development Studio<br>
+      <a href="mailto:aaryaman.golf@gmail.com">aaryaman.golf@gmail.com</a><br>
+      The Studio Film · 2026
+    </div>
+  </div>
+</footer>
+
+<script src="vendor/gsap.min.js"></script>
+<script src="vendor/ScrollTrigger.min.js"></script>
+<script src="vendor/lenis.min.js"></script>
+<script>
+(function(){
+"use strict";
+var REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+var JUMP = new URLSearchParams(location.search).get('jump');
+if (JUMP !== null) history.scrollRestoration = 'manual';
+
+gsap.registerPlugin(ScrollTrigger);
+
+/* ---------- Lenis smooth scroll (skipped for ?jump + reduced motion) ---------- */
+var lenis = null;
+if (!REDUCE && JUMP === null && typeof Lenis !== 'undefined'){
+  lenis = new Lenis({ lerp: 0.09, smoothWheel: true });
+  lenis.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add(function(t){ lenis.raf(t * 1000); });
+  gsap.ticker.lagSmoothing(0);
+}
+
+/* ---------- helpers ---------- */
+function splitChars(el){
+  var out = [];
+  var text = el.textContent;
+  el.textContent = '';
+  el.setAttribute('aria-label', text);
+  var frag = document.createDocumentFragment();
+  text.split(/(\s+)/).forEach(function(word){
+    if (/^\s+$/.test(word)){ frag.appendChild(document.createTextNode(' ')); return; }
+    var w = document.createElement('span'); w.className = 'w'; w.setAttribute('aria-hidden','true');
+    word.split('').forEach(function(ch){
+      var s = document.createElement('span'); s.className = 'c'; s.textContent = ch;
+      w.appendChild(s); out.push(s);
+    });
+    frag.appendChild(w);
+  });
+  el.appendChild(frag);
+  return out;
+}
+function fmtINR(n){
+  // Indian digit grouping: 1,00,000
+  var s = String(Math.round(n)), last3 = s.slice(-3), rest = s.slice(0,-3);
+  return '₹' + (rest ? rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' : '') + last3;
+}
+
+/* =========================================================
+   PINNED SCENES — created FIRST (ordering law)
+   ========================================================= */
+
+/* SCENE 01 — statement chars assemble from scatter */
+var stChars = splitChars(document.getElementById('statement'));
+stChars.forEach(function(c){
+  gsap.set(c, { x: gsap.utils.random(-260,260), y: gsap.utils.random(-180,180),
+                rotation: gsap.utils.random(-40,40), opacity: 0 });
+});
+var tl1 = gsap.timeline({ scrollTrigger: {
+  trigger: '#scene1', start: 'top top', end: '+=160%', pin: true, scrub: true
+}});
+tl1.to(stChars, { x:0, y:0, rotation:0, opacity:1, ease:'power2.out', stagger:{ each:.012, from:'random' }, duration:.55 })
+   .to('.s1 .subs p', { opacity:1, y:0, stagger:.12, duration:.25 }, '-=.1')
+   .to({}, { duration:.2 }); // hold
+
+/* SCENE 02 — wireframe draws + counters */
+var draws = gsap.utils.toArray('.s2 .draw');
+draws.forEach(function(p){
+  var L = p.getTotalLength ? p.getTotalLength() : 600;
+  p.style.strokeDasharray = L; p.style.strokeDashoffset = L;
+});
+var ct = { sites:0, ind:0, live:0 };
+var elSites = document.getElementById('ctSites'), elInd = document.getElementById('ctInd'), elLive = document.getElementById('ctLive');
+var tl2 = gsap.timeline({ scrollTrigger: {
+  trigger: '#scene2', start: 'top top', end: '+=180%', pin: true, scrub: true
+}});
+tl2.to(draws, { strokeDashoffset: 0, ease:'none', stagger:.05, duration:.6 })
+   .to(ct, { sites:6, ind:5, live:100, duration:.3, ease:'none', onUpdate: function(){
+        elSites.textContent = String(Math.round(ct.sites)).padStart(2,'0');
+        elInd.textContent   = String(Math.round(ct.ind)).padStart(2,'0');
+        elLive.textContent  = Math.round(ct.live) + '%';
+     }}, '-=.25')
+   .to('.s2 .site', { opacity:1, y:0, stagger:.05, duration:.2 }, '-=.15')
+   .to({}, { duration:.15 });
+
+/* SCENE 03 — horizontal run */
+var track = document.getElementById('track');
+gsap.to(track, {
+  x: function(){ return -(track.scrollWidth - innerWidth); },
+  ease: 'none',
+  scrollTrigger: {
+    trigger: '#scene3', start: 'top top', pin: true, scrub: true,
+    invalidateOnRefresh: true,
+    end: function(){ return '+=' + (track.scrollWidth - innerWidth); }
+  }
+});
+
+/* SCENE 04 — mock reveal + price counters */
+var P = { a:0, b:0, c:0, d:0, e:0 };
+var priceEls = { p1:document.getElementById('p1'), p2:document.getElementById('p2'),
+                 p3:document.getElementById('p3'), p4:document.getElementById('p4'),
+                 p5:document.getElementById('p5') };
+var tl4 = gsap.timeline({ scrollTrigger: {
+  trigger: '#scene4', start: 'top top', end: '+=150%', pin: true, scrub: true
+}});
+tl4.to('#mock', { clipPath: 'inset(0% 0 0% 0)', ease:'power1.inOut', duration:.55 })
+   .to(P, { a:1, b:1, c:1, d:1, e:1, duration:.4, ease:'none', onUpdate: function(){
+        priceEls.p1.textContent = fmtINR(15000*P.a)  + ' – ' + fmtINR(30000*P.a);
+        priceEls.p2.textContent = fmtINR(35000*P.b)  + ' – ' + fmtINR(80000*P.b);
+        priceEls.p3.textContent = fmtINR(80000*P.c)  + ' – ' + fmtINR(200000*P.c) + '+';
+        priceEls.p4.textContent = fmtINR(20000*P.d)  + ' – ' + fmtINR(50000*P.d);
+        priceEls.p5.textContent = fmtINR(30000*P.e)  + ' – ' + fmtINR(100000*P.e);
+     }}, '-=.3')
+   .to({}, { duration:.15 });
+
+/* SCENE 05 — ROI counter + signature flourish */
+var flourish = document.getElementById('flourish');
+var FL = flourish.getTotalLength();
+flourish.style.strokeDasharray = FL; flourish.style.strokeDashoffset = FL;
+var R = { v: 0 };
+var roiEl = document.getElementById('roi');
+var tl5 = gsap.timeline({ scrollTrigger: {
+  trigger: '#scene5', start: 'top top', end: '+=140%', pin: true, scrub: true
+}});
+tl5.to(R, { v: 100000, duration:.45, ease:'none', onUpdate: function(){
+      roiEl.textContent = fmtINR(R.v);
+   }})
+   .to('#sig', { opacity:1, y:0, duration:.2 }, '-=.1')
+   .to(flourish, { strokeDashoffset: 0, ease:'power1.inOut', duration:.3 })
+   .to({}, { duration:.2 });
+
+/* =========================================================
+   AFTER-FILM + AMBIENT — created AFTER pins (ordering law)
+   ========================================================= */
+gsap.utils.toArray('.rv').forEach(function(el){
+  gsap.to(el, { opacity:1, y:0, duration:.9, ease:'power3.out',
+    scrollTrigger: { trigger: el, start: 'top 86%', once: true } });
+});
+
+/* hero entrance (plays on load, not scroll) */
+var wmChars = splitChars(document.getElementById('wordmark'));
+if (!REDUCE && JUMP === null){
+  gsap.set(wmChars, { yPercent: 120 });
+  gsap.timeline({ delay:.15 })
+    .to('.hero .eyebrow', { opacity:1, duration:.7 })
+    .to(wmChars, { yPercent:0, ease:'power4.out', duration:1.1, stagger:.045 }, '-=.4')
+    .to('.hero .sub',  { opacity:1, duration:.8 }, '-=.5')
+    .to('.hero .roll', { opacity:1, duration:.8 }, '-=.5');
+} else {
+  gsap.set(['.hero .eyebrow','.hero .sub','.hero .roll'], { opacity:1 });
+}
+
+/* chapter readout (fixed chrome) */
+var chapters = [
+  { at: 0.00, num:'CH 00', name:'TITLES' },
+  { at: 0.06, num:'CH 01', name:'THE CANVAS' },
+  { at: 0.22, num:'CH 02', name:'THE BLUEPRINT' },
+  { at: 0.40, num:'CH 03', name:'THE CRAFT' },
+  { at: 0.58, num:'CH 04', name:'THE REVEAL' },
+  { at: 0.72, num:'CH 05', name:'LIFTOFF' },
+  { at: 0.84, num:'—',     name:'THE OFFER' }
+];
+var chNum = document.getElementById('chNum'), chName = document.getElementById('chName'), chBar = document.getElementById('chBar');
+function globalP(){
+  var max = Math.max(1, document.documentElement.scrollHeight - innerHeight);
+  return Math.max(0, Math.min(1, (window.scrollY || 0) / max));
+}
+function updateReadout(){
+  var p = globalP(), cur = chapters[0];
+  for (var i=0;i<chapters.length;i++) if (p >= chapters[i].at) cur = chapters[i];
+  if (chNum.textContent !== cur.num){ chNum.textContent = cur.num; chName.textContent = cur.name; }
+  chBar.style.width = (p*100).toFixed(1) + '%';
+}
+
+/* ---------- THE GOLD THREAD — canvas, morphing across 6 phases ---------- */
+var cv = document.getElementById('thread'), ctx = cv.getContext('2d');
+var DPR = Math.min(devicePixelRatio || 1, 1.5);
+function sizeCv(){ cv.width = innerWidth*DPR; cv.height = innerHeight*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
+sizeCv(); addEventListener('resize', sizeCv);
+var N = 140;
+function phasePoint(phase, i, t, time, W, H){
+  var u = i/(N-1);
+  switch(phase){
+    case 0: // drift — loose sine ribbon low across hero (clear of copy)
+      return [ u*W, H*.80 + Math.sin(u*6 + time*.8)*H*.05 + Math.sin(u*13 - time*.5)*H*.02 ];
+    case 1: // straighten — tightening line
+      return [ u*W, H*.81 + Math.sin(u*6 + time*.8)*H*.05*(1-t) ];
+    case 2: // grid trace — right-angle steps
+      var steps = 7, k = u*steps, si = Math.floor(k), f = k - si;
+      var x = (si + Math.min(1, f*2)) / steps * W;
+      var y = H*.24 + ((si + Math.max(0, f*2-1)) / steps) * H*.55;
+      return [ x, y ];
+    case 3: // circuit — horizontal bus with node dips
+      var dip = Math.pow(Math.sin(u*Math.PI*4), 8) * H*.05;
+      return [ u*W, H*.82 + dip + Math.sin(time*2 + u*20)*1.5 ];
+    case 4: // pour — cascade curving into a pool, right of the copy
+      var px = W*.78 + Math.sin(u*3 + time*.6)*W*.04*(1-u);
+      return [ px + (u*u)*(Math.sin(u*24+time)*W*.08), H*(.06 + u*.85) ];
+    case 5: // ascent — beam rising beside the copy, never through it
+      return [ W*.78 + Math.sin(u*10 + time*1.4)*W*.012*(1-u), H*(1.02 - u*1.04) ];
+  }
+  return [u*W, H*.5];
+}
+var PH_EDGES = [0, .08, .21, .40, .58, .74, 1.0001]; // 6 phases over global p
+function threadPts(p, time, W, H){
+  var ph = 0;
+  while (ph < 5 && p >= PH_EDGES[ph+1]) ph++;
+  var t = (p - PH_EDGES[ph]) / (PH_EDGES[ph+1] - PH_EDGES[ph]);
+  var blend = Math.min(1, t*2.4);          // morph into this phase over its first ~40%
+  var e = blend<.5 ? 2*blend*blend : 1-Math.pow(-2*blend+2,2)/2;
+  var pts = [];
+  for (var i=0;i<N;i++){
+    var a = phasePoint(Math.max(0,ph-1), i, 1, time, W, H);
+    var b = phasePoint(ph, i, t, time, W, H);
+    pts.push([ a[0]+(b[0]-a[0])*e, a[1]+(b[1]-a[1])*e ]);
+  }
+  return pts;
+}
+function drawThread(){
+  var W = innerWidth, H = innerHeight;
+  ctx.clearRect(0,0,W,H);
+  var p = globalP();
+  if (p > .82){ // fade out into after-film
+    var fade = 1 - Math.min(1,(p-.82)/.08);
+    if (fade <= 0) return;
+    ctx.globalAlpha = fade;
+  } else ctx.globalAlpha = 1;
+  var pts = threadPts(p, performance.now()/1000, W, H);
+  var passes = [ [7,'rgba(233,180,76,.07)'], [3,'rgba(233,180,76,.28)'], [1.4,'#F5D78A'] ];
+  passes.forEach(function(pass){
+    ctx.lineWidth = pass[0]; ctx.strokeStyle = pass[1];
+    ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (var i=1;i<N;i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.stroke();
+  });
+  // head glimmer
+  var head = pts[N-1];
+  var g = ctx.createRadialGradient(head[0],head[1],0,head[0],head[1],14);
+  g.addColorStop(0,'rgba(245,215,138,.9)'); g.addColorStop(1,'rgba(245,215,138,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(head[0],head[1],14,0,7); ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+/* ---------- jank meter (console) ---------- */
+var deltas = [], lastT = performance.now(), lastLog = lastT;
+function tick(){
+  var now = performance.now(); deltas.push(now-lastT); lastT = now;
+  if (now - lastLog > 2000){
+    var mx = Math.max.apply(null, deltas);
+    console.log('[jank] max frame ' + mx.toFixed(1) + 'ms over ' + deltas.length + ' frames');
+    deltas = []; lastLog = now;
+  }
+  if (!REDUCE) drawThread();
+  updateReadout();
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+/* ---------- dev contract: ?jump + __ready ---------- */
+function settle(){
+  ScrollTrigger.refresh();
+  window.scrollTo(0, +JUMP || 0);
+  ScrollTrigger.update();
+  ScrollTrigger.getAll().forEach(function(st){
+    if (st.animation) st.animation.totalProgress(st.progress);
+  });
+  if (!REDUCE) drawThread();
+  updateReadout();
+}
+window.addEventListener('load', function(){
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function(){
+    ScrollTrigger.refresh();
+    if (JUMP !== null){ settle(); requestAnimationFrame(function(){ settle(); window.__ready = true; }); }
+    else { window.__ready = true; }
+  });
+});
+})();
+</script>
+</body>
+</html>
