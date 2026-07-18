@@ -91,8 +91,8 @@
 
   /* scene 03 — the craft (horizontal) */
   .s3{display:block}
-  .s3 .h-wrap{height:100vh;display:flex;align-items:center;overflow:hidden}
-  .s3 .h-track{display:flex;align-items:center;gap:46px;width:max-content;padding:0 max(6vw,40px);will-change:transform}
+  .s3 .h-wrap{height:100vh;display:flex;align-items:center;overflow:hidden;perspective:1400px}
+  .s3 .h-track{display:flex;align-items:center;gap:46px;width:max-content;padding:0 max(6vw,40px);will-change:transform;transform-style:preserve-3d}
   .s3 .h-title{flex:0 0 auto;width:min(560px,78vw)}
   .s3 .h-title h2{font-size:clamp(2.4rem,5.5vw,4.6rem);line-height:1.02;letter-spacing:-.02em}
   .s3 .h-title h2 em{color:var(--gold)}
@@ -206,7 +206,8 @@
   .foot .meta a:hover{color:var(--gold);border-color:var(--gold)}
 
   /* ---------- extra motion: pollen / card tilt / skew runs / marquee / magnetic cta ---------- */
-  .hero .pollen{position:absolute;inset:0;z-index:0;pointer-events:none}
+  .hero .gl3d{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+  .hero .pollen{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
   .hero>*{position:relative;z-index:1}
 
   .station,.svc{position:relative}
@@ -265,6 +266,7 @@
     .mock{clip-path:none !important;transform:none !important}
     .mock .sweep{display:none}
     .hero .pollen{display:none}
+    .hero .gl3d{display:none}
     .viz-track{animation:none}
     #thread{display:none}
   }
@@ -284,6 +286,7 @@
 
 <!-- HERO -->
 <section class="hero" id="hero">
+  <canvas class="gl3d" id="gl3d" aria-hidden="true"></canvas>
   <canvas class="pollen" id="pollen" aria-hidden="true"></canvas>
   <p class="eyebrow">Aaryaman · The Studio Film</p>
   <h1 id="wordmark">Aaryaman<span class="dot">.</span></h1>
@@ -512,6 +515,7 @@
   </div>
 </footer>
 
+<script src="vendor/three.min.js"></script>
 <script src="vendor/gsap.min.js"></script>
 <script src="vendor/ScrollTrigger.min.js"></script>
 <script src="vendor/lenis.min.js"></script>
@@ -597,7 +601,7 @@ tl2.to(draws, { strokeDashoffset: 0, ease:'none', stagger:.05, duration:.6 })
 
 /* SCENE 03 — horizontal run */
 var track = document.getElementById('track');
-gsap.to(track, {
+var s3Tween = gsap.to(track, {
   x: function(){ return -(track.scrollWidth - innerWidth); },
   ease: 'none',
   scrollTrigger: {
@@ -835,7 +839,76 @@ function drawPollen(){
   pctx.globalAlpha = 1;
 }
 sizePollen(); initPollen();
-addEventListener('resize', function(){ sizeCv(); sizePollen(); initPollen(); });
+
+/* ---------- WebGL — a real 3D gold ribbon turning behind the hero wordmark ---------- */
+var gl3dCv = document.getElementById('gl3d'), gl3d = null;
+if (!REDUCE && gl3dCv && typeof THREE !== 'undefined'){
+  try {
+    var glRenderer = new THREE.WebGLRenderer({ canvas: gl3dCv, alpha:true, antialias:true, powerPreference:'low-power' });
+    glRenderer.setPixelRatio(Math.min(DPR, 1.25));
+    var glScene = new THREE.Scene();
+    var glCamera = new THREE.PerspectiveCamera(38, 1, 0.1, 20);
+    glCamera.position.set(0, 0.15, 5.4);
+
+    glScene.add(new THREE.AmbientLight(0x3a2a12, 0.9));
+    var keyLight = new THREE.DirectionalLight(0xffe6b0, 1.5);
+    keyLight.position.set(3, 4, 4); glScene.add(keyLight);
+    var rimLight = new THREE.PointLight(0xE9B44C, 1.1, 20);
+    rimLight.position.set(-3, -2, 2); glScene.add(rimLight);
+
+    var ribbonPts = [
+      new THREE.Vector3( 1.65,  0.22, -0.30), new THREE.Vector3( 0.62,  0.92,  0.45),
+      new THREE.Vector3(-0.58,  0.48, -0.55), new THREE.Vector3(-1.62, -0.28,  0.35),
+      new THREE.Vector3(-0.60, -0.94, -0.42), new THREE.Vector3( 0.64, -0.46,  0.52),
+      new THREE.Vector3( 1.28,  0.08, -0.18)
+    ];
+    var ribbonCurve = new THREE.CatmullRomCurve3(ribbonPts, true, 'catmullrom', 0.9);
+    var tubeMat = new THREE.MeshStandardMaterial({
+      color: 0xE9B44C, metalness: 0.85, roughness: 0.36, emissive: 0x2a1a05, emissiveIntensity: 0.32,
+      transparent: true, opacity: 0.9
+    });
+    var ribbonGroup = new THREE.Group();
+    var ribbon = new THREE.Mesh(new THREE.TubeGeometry(ribbonCurve, 130, 0.075, 12, true), tubeMat);
+    ribbonGroup.add(ribbon);
+
+    var wireMat = new THREE.LineBasicMaterial({ color: 0xF5D78A, transparent:true, opacity:0.13 });
+    var wire = new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.TubeGeometry(ribbonCurve, 54, 0.088, 6, true)), wireMat);
+    ribbonGroup.add(wire);
+
+    ribbonGroup.scale.setScalar(0.5);
+    ribbonGroup.position.set(1.85, 0.75, -0.6);
+    ribbonGroup.rotation.set(0.25, 0.4, 0.15);
+    glScene.add(ribbonGroup);
+
+    gl3d = { renderer: glRenderer, scene: glScene, camera: glCamera, group: ribbonGroup, t0: performance.now() };
+  } catch(e){ gl3d = null; }
+}
+function sizeGL3D(){
+  if (!gl3d || !gl3dCv) return;
+  var w = gl3dCv.clientWidth, h = gl3dCv.clientHeight;
+  if (!w || !h) return;
+  gl3d.renderer.setSize(w, h, false);
+  gl3d.camera.aspect = w/h;
+  gl3d.camera.updateProjectionMatrix();
+}
+var glFrameSkip = 0;
+function drawGL3D(){
+  if (!gl3d) return;
+  var p = globalP();
+  if (p > 0.13){ gl3dCv.style.display = 'none'; return; }
+  gl3dCv.style.display = 'block';
+  var fade = Math.max(0, 1 - p/0.1);
+  gl3dCv.style.opacity = fade;
+  if (fade <= 0) return;
+  glFrameSkip = (glFrameSkip + 1) % 2;
+  if (glFrameSkip) return; // render at ~half rate — plenty for a slow ambient rotation
+  var t = (performance.now() - gl3d.t0) / 1000;
+  gl3d.group.rotation.y = 0.4 + t * 0.22;
+  gl3d.group.rotation.x = 0.25 + Math.sin(t*0.35) * 0.1;
+  gl3d.renderer.render(gl3d.scene, gl3d.camera);
+}
+sizeGL3D();
+addEventListener('resize', function(){ sizeCv(); sizePollen(); initPollen(); sizeGL3D(); });
 
 /* ---------- velocity-skew — The Craft run + the Vision marquee lean into scroll speed ---------- */
 var trackSkewEl = document.getElementById('trackSkew'), vizSkewEl = document.getElementById('vizSkew');
@@ -851,9 +924,24 @@ function updateSkew(){
   if (vizSkewEl) vizSkewEl.style.transform = 'skewX(' + (-skewSmoothed*0.6).toFixed(2) + 'deg)';
 }
 
-/* ---------- cursor-reactive tilt — tool stations + service cards ---------- */
+/* ---------- The Craft, in true 3D — stations arc through depth as the reel scrolls ---------- */
+var stationEls = gsap.utils.toArray('.station');
+function updateCoverflow(){
+  if (!s3Tween.scrollTrigger || !s3Tween.scrollTrigger.isActive) return;
+  var half = innerWidth * 0.55;
+  for (var i=0;i<stationEls.length;i++){
+    var el = stationEls[i];
+    var r = el.getBoundingClientRect();
+    var center = (r.left + r.width/2) - innerWidth/2;
+    var norm = gsap.utils.clamp(-1, 1, center / half);
+    var rotY = norm * -28, z = -Math.abs(norm)*130, scale = 1 - Math.abs(norm)*0.09;
+    el.style.transform = 'rotateY('+rotY.toFixed(2)+'deg) translateZ('+z.toFixed(1)+'px) scale('+scale.toFixed(3)+')';
+  }
+}
+
+/* ---------- cursor-reactive tilt — service cards (stations get scroll-driven coverflow, below) ---------- */
 if (!REDUCE){
-  gsap.utils.toArray('.station, .svc').forEach(function(card){
+  gsap.utils.toArray('.svc').forEach(function(card){
     card.addEventListener('mousemove', function(e){
       var r = card.getBoundingClientRect();
       var px = (e.clientX - r.left)/r.width, py = (e.clientY - r.top)/r.height;
@@ -895,6 +983,8 @@ function tick(){
     drawEmbers(Math.min(0.05, frameDt/1000));
     drawPollen();
     updateSkew();
+    updateCoverflow();
+    drawGL3D();
   }
   updateReadout();
   requestAnimationFrame(tick);
